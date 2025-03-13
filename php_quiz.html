@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center" id="quiz-title"></h1>
+    
+        <!-- Quiz Questions -->
+        <div id="quiz-container"></div>
+    
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="text-center mt-3"></div>
+    
+        <!-- Score Section -->
+        <div id="score-section" class="text-center mt-5" style="display: none;">
+            <h3>Your Score:</h3>
+            <p id="score-text"></p>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];  // Array to store user answers
+        let timer;
+        let timeLeft;
+        let timerRunning = false;
+    
+        // Retrieve URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty');
+        const numQuestions = parseInt(urlParams.get('questions'));
+    
+        // Set quiz title
+        document.getElementById('quiz-title').textContent = `PHP - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} - ${numQuestions} Questions`;
+    
+        // Set time per question based on difficulty
+        function getTimeForQuestion(difficulty) {
+            switch (difficulty) {
+                case 'easy':
+                    return 30;  // 30 seconds for easy mode
+                case 'medium':
+                    return 45;  // 45 seconds for medium mode
+                case 'hard':
+                    return 60;  // 60 seconds for hard mode
+                default:
+                    return 30;  // Default to easy if difficulty is not set
+            }
+        }
+    
+        // Generate quiz questions based on parameters
+        questions = getQuestions('php', difficulty, numQuestions);
+        displayQuestion(currentQuestionIndex);
+    
+        function displayQuestion(index) {
+            const questionContainer = document.getElementById('quiz-container');
+            const question = questions[index];
+    
+            // Set timer for the current question
+            timeLeft = getTimeForQuestion(difficulty);
+    
+            // Clear any previous timer and start a new one
+            clearInterval(timer);
+            startTimer();
+    
+            // Create question HTML using innerHTML
+            questionContainer.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body d-flex justify-content-between">
+                        <!-- Question Text -->
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">${question.question}</h5>
+                            ${question.options.map((option, i) => {
+                                const isChecked = userAnswers[index] === option ? 'checked' : ''; // Check if this option was previously selected
+                                return `
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="question${index}" id="option${i+1}_${index}" value="${option}" ${isChecked}>
+                                        <label class="form-check-label" for="option${i+1}_${index}">
+                                            ${option}
+                                        </label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+    
+                        <!-- Timer Display -->
+                        <div id="timer" class="align-self-center">
+                            Time Left: <span id="time">${timeLeft}</span> seconds
+                        </div>
+                    </div>
+                </div>
+            `;
+    
+            // Display Previous and Next buttons
+            const navigationContainer = document.getElementById('navigation-buttons');
+            navigationContainer.innerHTML = '';  // Clear previous buttons
+    
+            // Add Previous button if not the first question
+            if (index > 0) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(-1)">Previous</button>
+                `;
+            }
+    
+            // Add Next button if not the last question
+            if (index < questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(1)">Next</button>
+                `;
+            }
+    
+            // Optionally, add a submit button if on the last question
+            if (index === questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-success" onclick="submitQuiz()">Submit Quiz</button>
+                `;
+            }
+        }
+    
+        function navigateQuestion(direction) {
+            // Save the selected answer for the current question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer
+            }
+    
+            // Clear the timer for the previous question
+            clearInterval(timer);
+    
+            // Move to the next question
+            currentQuestionIndex += direction;
+    
+            // Display the new question
+            displayQuestion(currentQuestionIndex);
+        }
+    
+        function startTimer() {
+            // Start the countdown
+            timer = setInterval(() => {
+                timeLeft--;  // Decrease time
+                document.getElementById('time').textContent = timeLeft;  // Update timer display
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);  // Stop timer when time runs out
+                    navigateQuestion(1);  // Automatically move to the next question
+                }
+            }, 1000);
+        }
+    
+        function submitQuiz() {
+            let score = 0;  // Reset score before starting the evaluation
+    
+            // Ensure that the answer is saved for the last question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer for the last question if needed
+            }
+    
+            // Evaluate each question
+            for (let i = 0; i < questions.length; i++) {
+                const correctAnswer = questions[i].answer;  // Get the correct answer text
+                
+                // Ensure we have an answer stored for this question
+                if (userAnswers[i] === correctAnswer) {
+                    score++;  // Increment score if the answer is correct
+                }
+            }
+    
+            // Display the score
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('navigation-buttons').style.display = 'none';
+            document.getElementById('score-section').style.display = 'block';
+            document.getElementById('score-text').textContent = `You scored ${score} out of ${questions.length}`;
+        }
+
+    function getQuestions(language, difficulty, numQuestions) {
+        const allQuestions = {
+        php: {
+        easy: [
+        {
+            question: "1. Which of the following is the correct way to declare a variable in PHP?", 
+            options: ["A) $var = 'value';", "B) var $var = 'value';", "C) declare $var = 'value';", "D) int var = 'value';"],
+            answer: "A) $var = 'value';"
+        },
+        {
+            question: "2. What is the correct way to check if a variable is set in PHP?", 
+            options: ["A) isset($variable)", "B) isSet($variable)", "C) checkSet($variable)", "D) defined($variable)"],
+            answer: "A) isset($variable)"
+        },
+        {
+            question: "3. Which operator is used for concatenation in PHP?", 
+            options: ["A) +", "B) .", "C) &", "D) *"],
+            answer: "B) ."
+        },
+        {
+            question: "4. Which of the following is used to define a constant in PHP?", 
+            options: ["A) define('CONSTANT_NAME', 'value');", "B) constant('CONSTANT_NAME', 'value');", "C) set('CONSTANT_NAME', 'value');", "D) const('CONSTANT_NAME', 'value');"],
+            answer: "A) define('CONSTANT_NAME', 'value');"
+        },
+        {
+            question: "5. Which of the following is a valid PHP array declaration?", 
+            options: ["A) $arr = array(1, 2, 3);", "B) $arr = [1, 2, 3];", "C) $arr = (1, 2, 3);", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "6. Which function is used to find the length of a string in PHP?", 
+            options: ["A) strLength()", "B) length()", "C) strlen()", "D) size()"],
+            answer: "C) strlen()"
+        },
+        {
+            question: "7. Which of the following will display 'Hello World' in PHP?", 
+            options: ["A) echo 'Hello World';", "B) print 'Hello World';", "C) write('Hello World');", "D) A and B"],
+            answer: "D) A and B"
+        },
+        {
+            question: "8. What will the following code output?\n\n$var = 10;\nvar_dump($var);", 
+            options: ["A) 10", "B) string(2) '10'", "C) int(10)", "D) Error"],
+            answer: "C) int(10)"
+        },
+        {
+            question: "9. Which superglobal array in PHP holds form data?", 
+            options: ["A) $_POST", "B) $_GET", "C) $_REQUEST", "D) All of the above"],
+            answer: "D) All of the above"
+        },
+        {
+            question: "10. Which function is used to include a file in PHP?", 
+            options: ["A) include()", "B) includeFile()", "C) require()", "D) A and C"],
+            answer: "D) A and C"
+        },
+        {
+            question: "11. How do you create a session in PHP?", 
+            options: ["A) session_start();", "B) start_session();", "C) create_session();", "D) initialize_session();"],
+            answer: "A) session_start();"
+        },
+        {
+            question: "12. How do you write a single-line comment in PHP?", 
+            options: ["A) // comment", "B) /* comment */", "C) # comment", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "13. What is the output of the following code?\n\n$var = 5;\nvar_dump($var == 5);", 
+            options: ["A) 5", "B) bool(true)", "C) int(5)", "D) Error"],
+            answer: "B) bool(true)"
+        },
+        {
+            question: "14. Which keyword is used to define a class in PHP?", 
+            options: ["A) class", "B) define", "C) object", "D) function"],
+            answer: "A) class"
+        },
+        {
+            question: "15. Which function is used to convert a string to an integer in PHP?", 
+            options: ["A) toInt()", "B) strToInt()", "C) intval()", "D) stringToInt()"],
+            answer: "C) intval()"
+        },
+        {
+            question: "16. What will the following code output?\n\n$var = 0;\nvar_dump($var);", 
+            options: ["A) 0", "B) string(1) '0'", "C) bool(false)", "D) int(0)"],
+            answer: "D) int(0)"
+        },
+        {
+            question: "17. What will the following code output?\n\n$var = 10.5;\nvar_dump($var);", 
+            options: ["A) float(10.5)", "B) int(10)", "C) string(4) '10.5'", "D) double(10.5)"],
+            answer: "A) float(10.5)"
+        },
+        {
+            question: "18. What does the function 'file_get_contents()' do in PHP?", 
+            options: ["A) Reads a file", "B) Writes to a file", "C) Deletes a file", "D) Opens a file"],
+            answer: "A) Reads a file"
+        },
+        {
+            question: "19. How do you check the type of a variable in PHP?", 
+            options: ["A) isType()", "B) checkType()", "C) var_type()", "D) gettype()"],
+            answer: "D) gettype()"
+        },
+        {
+            question: "20. Which of the following will create an array in PHP?", 
+            options: ["A) $arr = [1, 2, 3];", "B) $arr = array(1, 2, 3);", "C) $arr = (1, 2, 3);", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "21. Which function is used to remove whitespace from the beginning and end of a string?", 
+            options: ["A) trim()", "B) clean()", "C) stripWhitespace()", "D) whitespace()"],
+            answer: "A) trim()"
+        },
+        {
+            question: "22. Which function is used to compare two strings in PHP?", 
+            options: ["A) strCompare()", "B) compareStr()", "C) strcmp()", "D) stringCompare()"],
+            answer: "C) strcmp()"
+        },
+        {
+            question: "23. What will the following code output?\n\n$var = 'PHP';\n$var = strtoupper($var);\necho $var;", 
+            options: ["A) php", "B) Php", "C) PHP", "D) P h P"],
+            answer: "C) PHP"
+        },
+        {
+            question: "24. How do you create a multi-dimensional array in PHP?", 
+            options: ["A) $arr = array(1 => array(1, 2, 3));", "B) $arr = array(array(1, 2, 3));", "C) Both A and B", "D) $arr = [1, [1, 2, 3]]"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "25. How do you convert a string to lowercase in PHP?", 
+            options: ["A) lower_case($var)", "B) strlower($var)", "C) strtolower($var)", "D) tolower($var)"],
+            answer: "C) strtolower($var)"
+        },
+        {
+            question: "26. Which function is used to count the number of elements in an array?", 
+            options: ["A) count()", "B) size()", "C) length()", "D) elements()"],
+            answer: "A) count()"
+        },
+        {
+            question: "27. How do you check if a file exists in PHP?", 
+            options: ["A) file_exists()", "B) check_file()", "C) is_file()", "D) file_check()"],
+            answer: "A) file_exists()"
+        },
+        {
+            question: "28. How do you define a constant in PHP?", 
+            options: ["A) define('CONSTANT', 'value');", "B) const CONSTANT = 'value';", "C) Both A and B", "D) constant('CONSTANT', 'value')"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "29. What is the default value of a variable in PHP?", 
+            options: ["A) NULL", "B) 0", "C) Empty string", "D) Undefined"],
+            answer: "A) NULL"
+        },
+        {
+            question: "30. How do you connect to a MySQL database in PHP?", 
+            options: ["A) mysql_connect()", "B) mysqli_connect()", "C) connect_mysql()", "D) Both A and B"],
+            answer: "B) mysqli_connect()"
+        }
+    ],
+    medium: [
+        {
+            question: "1. How do you create a function in PHP?", 
+            options: ["A) function myFunction() {}", "B) def myFunction() {}", "C) create function myFunction() {}", "D) function = myFunction() {}"],
+            answer: "A) function myFunction() {}"
+        },
+        {
+            question: "2. What will the following PHP code output?\n\n$a = 5;\n$b = 10;\necho $a + $b;", 
+            options: ["A) 15", "B) 5 10", "C) 5+10", "D) 5 10 15"],
+            answer: "A) 15"
+        },
+        {
+            question: "3. What is the result of this code?\n\n$var = 5;\n$var += 3;\necho $var;", 
+            options: ["A) 5", "B) 3", "C) 8", "D) 15"],
+            answer: "C) 8"
+        },
+        {
+            question: "4. Which function is used to find the position of the first occurrence of a substring in a string?", 
+            options: ["A) strpos()", "B) indexOf()", "C) search()", "D) find()"],
+            answer: "A) strpos()"
+        },
+        {
+            question: "5. Which function is used to replace all occurrences of a substring with a new string?", 
+            options: ["A) str_replace()", "B) replace_string()", "C) replace_substr()", "D) str_substitute()"],
+            answer: "A) str_replace()"
+        },
+        {
+            question: "6. What does the 'trim()' function do in PHP?", 
+            options: ["A) Removes extra spaces from the beginning and end of a string", "B) Converts string to uppercase", "C) Splits a string into an array", "D) Reverses the string"],
+            answer: "A) Removes extra spaces from the beginning and end of a string"
+        },
+        {
+            question: "7. How do you define a constant array in PHP?", 
+            options: ["A) const $arr = array(1, 2, 3);", "B) define('ARR', array(1, 2, 3));", "C) array('const' => 1, 2, 3);", "D) const ARR = array(1, 2, 3);"],
+            answer: "B) define('ARR', array(1, 2, 3));"
+        },
+        {
+            question: "8. What will this PHP code print?\n\n$var = 10;\n$var = $var * 2;\necho $var;", 
+            options: ["A) 10", "B) 20", "C) 5", "D) Error"],
+            answer: "B) 20"
+        },
+        {
+            question: "9. Which of the following functions is used to get the last element of an array?", 
+            options: ["A) end()", "B) last()", "C) tail()", "D) get_last()"],
+            answer: "A) end()"
+        },
+        {
+            question: "10. What is the purpose of the 'include' statement in PHP?", 
+            options: ["A) Includes a PHP file within another PHP file", "B) Includes an external library", "C) Defines a constant", "D) Executes SQL queries"],
+            answer: "A) Includes a PHP file within another PHP file"
+        },
+        {
+            question: "11. What is the purpose of the 'break' statement in PHP?", 
+            options: ["A) To break out of a loop", "B) To exit a function", "C) To throw an exception", "D) To break a string into an array"],
+            answer: "A) To break out of a loop"
+        },
+        {
+            question: "12. Which of the following is a valid way to define an array with key-value pairs?", 
+            options: ["A) $arr = array('a' => 1, 'b' => 2);", "B) $arr = array('a' = 1, 'b' = 2);", "C) $arr = ['a' => 1, 'b' => 2];", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "13. How do you concatenate two strings in PHP?", 
+            options: ["A) concat()", "B) +", "C) .", "D) &"],
+            answer: "C) ."
+        },
+        {
+            question: "14. What is the difference between '==' and '===' in PHP?", 
+            options: ["A) '==' compares only values, '===' compares values and data types", "B) '==' compares variables, '===' compares functions", "C) '==' compares data types, '===' compares values", "D) There is no difference"],
+            answer: "A) '==' compares only values, '===' compares values and data types"
+        },
+        {
+            question: "15. Which function is used to get a substring from a string?", 
+            options: ["A) substr()", "B) get_substr()", "C) sub()", "D) strcut()"],
+            answer: "A) substr()"
+        },
+        {
+            question: "16. What is the purpose of the 'isset()' function in PHP?", 
+            options: ["A) To check if a variable is declared and is not null", "B) To check if a file is included", "C) To check if an array is empty", "D) To check if a function is available"],
+            answer: "A) To check if a variable is declared and is not null"
+        },
+        {
+            question: "17. How do you prevent SQL injection in PHP?", 
+            options: ["A) Using prepared statements with bound parameters", "B) Using regular expressions", "C) Escaping user input manually", "D) Validating input data with 'isset()'"],
+            answer: "A) Using prepared statements with bound parameters"
+        },
+        {
+            question: "18. What will this PHP code output?\n\n$var = 5;\n$var++; echo $var;", 
+            options: ["A) 6", "B) 5", "C) 7", "D) Error"],
+            answer: "A) 6"
+        },
+        {
+            question: "19. Which function is used to get the number of elements in an array?", 
+            options: ["A) array_count()", "B) count()", "C) size()", "D) num_elements()"],
+            answer: "B) count()"
+        },
+        {
+            question: "20. What is the correct way to open a MySQL connection in PHP?", 
+            options: ["A) mysqli_connect()", "B) connect_mysql()", "C) open_mysql_connection()", "D) mysql_connect()"],
+            answer: "A) mysqli_connect()"
+        },
+        {
+            question: "21. Which of the following will include the 'header.php' file?", 
+            options: ["A) include('header.php');", "B) require('header.php');", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "22. How do you check if a string contains a certain word in PHP?", 
+            options: ["A) strpos()", "B) contains()", "C) search()", "D) find_word()"],
+            answer: "A) strpos()"
+        },
+        {
+            question: "23. What does 'include_once()' do in PHP?", 
+            options: ["A) Includes a file only once during the script execution", "B) Includes a file multiple times", "C) Includes a file for each function", "D) None of the above"],
+            answer: "A) Includes a file only once during the script execution"
+        },
+        {
+            question: "24. What will this code output?\n\n$var = 'Hello';\n$var[0] = 'h';\necho $var;", 
+            options: ["A) hello", "B) Hello", "C) hello", "D) Error"],
+            answer: "A) hello"
+        },
+        {
+            question: "25. What is the correct way to define a constant in PHP?", 
+            options: ["A) const PI = 3.14;", "B) define('PI', 3.14);", "C) Both A and B", "D) constant('PI', 3.14);"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "26. How do you prevent HTML code from being rendered in PHP?", 
+            options: ["A) Using htmlspecialchars()", "B) Using htmlentities()", "C) Both A and B", "D) Using strip_tags()"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "27. What does the 'array_push()' function do in PHP?", 
+            options: ["A) Adds an element to the end of an array", "B) Removes the last element of an array", "C) Adds an element to the beginning of an array", "D) Creates an array"],
+            answer: "A) Adds an element to the end of an array"
+        },
+        {
+            question: "28. What will this code output?\n\n$var = 5.5;\necho round($var);", 
+            options: ["A) 6", "B) 5", "C) 5.5", "D) Error"],
+            answer: "A) 6"
+        },
+        {
+            question: "29. What function is used to include PHP files into another PHP script?", 
+            options: ["A) require()", "B) include()", "C) Both A and B", "D) load()"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "30. Which function is used to convert a string to an array in PHP?", 
+            options: ["A) explode()", "B) split()", "C) str_split()", "D) convert()"],
+            answer: "A) explode()"
+        }
+    ],
+    
+    hard: [
+        {
+            question: "1. What is the purpose of the 'explode()' function in PHP?", 
+            options: ["A) To join array elements into a string", "B) To split a string into an array", "C) To replace a string", "D) To remove spaces from a string"],
+            answer: "B) To split a string into an array"
+        },
+        {
+            question: "2. How do you access a value in an associative array in PHP?", 
+            options: ["A) $array['key']", "B) $array.key", "C) array('key')", "D) $array{key}"],
+            answer: "A) $array['key']"
+        },
+        {
+            question: "3. What is the purpose of the 'session_start()' function?", 
+            options: ["A) Starts a new session", "B) Initializes session variables", "C) Starts or resumes a session", "D) None of the above"],
+            answer: "C) Starts or resumes a session"
+        },
+        {
+            question: "4. What will be the output of the following code?\n\n$x = 10;\n$y = 10;\nvar_dump($x == $y);", 
+            options: ["A) bool(false)", "B) bool(true)", "C) Error", "D) int(10)"],
+            answer: "B) bool(true)"
+        },
+        {
+            question: "5. How do you define a multi-dimensional array in PHP?", 
+            options: ["A) $array = array(array(1, 2), array(3, 4));", "B) $array = [[1, 2], [3, 4]];", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "6. Which method is used to send data to a MySQL database in PHP?", 
+            options: ["A) insert()", "B) query()", "C) execute()", "D) execute_query()"],
+            answer: "B) query()"
+        },
+        {
+            question: "7. Which method is used to fetch results from a MySQL query in PHP?", 
+            options: ["A) fetch_results()", "B) fetch_row()", "C) mysqli_fetch()", "D) fetch_array()"],
+            answer: "C) mysqli_fetch()"
+        },
+        {
+            question: "8. Which PHP function is used to handle errors?", 
+            options: ["A) set_error_handler()", "B) error_reporting()", "C) trigger_error()", "D) None of the above"],
+            answer: "A) set_error_handler()"
+        },
+        {
+            question: "9. What does the 'mysqli_fetch_assoc()' function return?", 
+            options: ["A) An array", "B) A numeric array", "C) A key-value pair array", "D) A string"],
+            answer: "C) A key-value pair array"
+        },
+        {
+            question: "10. How do you execute a prepared statement in PHP?", 
+            options: ["A) execute_query()", "B) mysqli_query()", "C) execute()", "D) Both B and C"],
+            answer: "C) execute()"
+        },
+        {
+            question: "11. Which function would you use to handle a PHP session securely?", 
+            options: ["A) session_set_cookie_params()", "B) session_start()", "C) session_regenerate_id()", "D) session_secure()"],
+            answer: "C) session_regenerate_id()"
+        },
+        {
+            question: "12. What does 'PDO' stand for in PHP?", 
+            options: ["A) PHP Data Objects", "B) Personal Data Objects", "C) PHP Data Operations", "D) Persistent Data Objects"],
+            answer: "A) PHP Data Objects"
+        },
+        {
+            question: "13. How do you set a cookie in PHP?", 
+            options: ["A) setcookie('name', 'value', time() + 3600);", "B) cookie('name', 'value');", "C) create_cookie('name', 'value');", "D) store_cookie('name', 'value');"],
+            answer: "A) setcookie('name', 'value', time() + 3600);"
+        },
+        {
+            question: "14. How do you check if a file exists in PHP?", 
+            options: ["A) file_exists()", "B) file_check()", "C) is_file()", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "15. Which function is used to execute a query in MySQLi?", 
+            options: ["A) query_execute()", "B) mysqli_query()", "C) query_string()", "D) exec_query()"],
+            answer: "B) mysqli_query()"
+        },
+        {
+            question: "16. How can you prevent XSS attacks in PHP?", 
+            options: ["A) Using htmlspecialchars()", "B) Using mysqli_real_escape_string()", "C) Using strip_tags()", "D) All of the above"],
+            answer: "D) All of the above"
+        },
+        {
+            question: "17. Which function is used to check if a file is writable?", 
+            options: ["A) is_writable()", "B) file_writable()", "C) check_write()", "D) writable()"],
+            answer: "A) is_writable()"
+        },
+        {
+            question: "18. How do you hash a password in PHP?", 
+            options: ["A) password_hash()", "B) hash_password()", "C) password_encrypt()", "D) password_secure()"],
+            answer: "A) password_hash()"
+        },
+        {
+            question: "19. How do you create a PDO connection in PHP?", 
+            options: ["A) new PDO('mysql:host=localhost;dbname=test', 'user', 'password');", "B) PDO_connect('localhost', 'user', 'password');", "C) create_connection('localhost', 'user', 'password');", "D) new PDO_connection();"],
+            answer: "A) new PDO('mysql:host=localhost;dbname=test', 'user', 'password');"
+        },
+        {
+            question: "20. How do you retrieve the last inserted ID from a database in PHP?", 
+            options: ["A) mysqli_insert_id()", "B) last_id()", "C) mysqli_fetch_last()", "D) get_last_insert_id()"],
+            answer: "A) mysqli_insert_id()"
+        },
+        {
+            question: "21. How do you delete a session in PHP?", 
+            options: ["A) session_destroy()", "B) remove_session()", "C) unset_session()", "D) clear_session()"],
+            answer: "A) session_destroy()"
+        },
+        {
+            question: "22. What does 'SQL injection' mean in PHP?", 
+            options: ["A) Injecting malicious SQL queries", "B) Deleting data from the database", "C) Running PHP scripts with database privileges", "D) Encrypting SQL queries"],
+            answer: "A) Injecting malicious SQL queries"
+        },
+        {
+            question: "23. What function is used to create an empty session in PHP?", 
+            options: ["A) session_start()", "B) session_create()", "C) initialize_session()", "D) session_initialize()"],
+            answer: "A) session_start()"
+        },
+        {
+            question: "24. How do you redirect to another page in PHP?", 
+            options: ["A) header('Location: new_page.php');", "B) redirect('new_page.php');", "C) move('new_page.php');", "D) change_page('new_page.php');"],
+            answer: "A) header('Location: new_page.php');"
+        },
+        {
+            question: "25. Which function is used to retrieve a row from a MySQL database in PHP?", 
+            options: ["A) mysqli_fetch_assoc()", "B) get_row()", "C) fetch_row()", "D) select_row()"],
+            answer: "A) mysqli_fetch_assoc()"
+        },
+        {
+            question: "26. How do you handle file uploads in PHP?", 
+            options: ["A) Using $_FILES", "B) Using file_upload()", "C) Using file_upload() and $_POST", "D) Using file()"],
+            answer: "A) Using $_FILES"
+        },
+        {
+            question: "27. Which function is used to get the type of a variable in PHP?", 
+            options: ["A) type()", "B) gettype()", "C) variable_type()", "D) get_variable()"],
+            answer: "B) gettype()"
+        },
+        {
+            question: "28. What does the 'mysqli_error()' function return?", 
+            options: ["A) The number of rows affected", "B) The last error message", "C) A success message", "D) The MySQL server version"],
+            answer: "B) The last error message"
+        },
+        {
+            question: "29. How do you terminate a script in PHP?", 
+            options: ["A) exit()", "B) stop()", "C) die()", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "30. How do you create a prepared statement in PHP?", 
+            options: ["A) prepare('SQL query')", "B) mysqli_prepare()", "C) create_statement()", "D) Both A and B"],
+            answer: "D) Both A and B"
+        }
+    ]
+    }
+    };
+
+    return allQuestions[language][difficulty].slice(0, numQuestions); // Ensure number of questions
+
+    }
+    </script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+body {
+    font-family: 'Arial', sans-serif;
+}
+
+#quiz-container {
+    display: none;
+}
+/* Instruction Section CSS */
+.instructions {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.instructions h3 {
+    font-size: 1.5rem;
+    color: #343a40;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.instructions ul {
+    list-style-type: square;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.instructions ul li {
+    margin-bottom: 10px;
+}
+
+.instructions p {
+    font-size: 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.question{
+    text-align: center;
+}

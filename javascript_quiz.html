@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center" id="quiz-title"></h1>
+    
+        <!-- Quiz Questions -->
+        <div id="quiz-container"></div>
+    
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="text-center mt-3"></div>
+    
+        <!-- Score Section -->
+        <div id="score-section" class="text-center mt-5" style="display: none;">
+            <h3>Your Score:</h3>
+            <p id="score-text"></p>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];  // Array to store user answers
+        let timer;
+        let timeLeft;
+        let timerRunning = false;
+    
+        // Retrieve URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty');
+        const numQuestions = parseInt(urlParams.get('questions'));
+    
+        // Set quiz title
+        document.getElementById('quiz-title').textContent = `Javascript - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} - ${numQuestions} Questions`;
+    
+        // Set time per question based on difficulty
+        function getTimeForQuestion(difficulty) {
+            switch (difficulty) {
+                case 'easy':
+                    return 30;  // 30 seconds for easy mode
+                case 'medium':
+                    return 45;  // 45 seconds for medium mode
+                case 'hard':
+                    return 60;  // 60 seconds for hard mode
+                default:
+                    return 30;  // Default to easy if difficulty is not set
+            }
+        }
+    
+        // Generate quiz questions based on parameters
+        questions = getQuestions('javascript', difficulty, numQuestions);
+        displayQuestion(currentQuestionIndex);
+    
+        function displayQuestion(index) {
+            const questionContainer = document.getElementById('quiz-container');
+            const question = questions[index];
+    
+            // Set timer for the current question
+            timeLeft = getTimeForQuestion(difficulty);
+    
+            // Clear any previous timer and start a new one
+            clearInterval(timer);
+            startTimer();
+    
+            // Create question HTML using innerHTML
+            questionContainer.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body d-flex justify-content-between">
+                        <!-- Question Text -->
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">${question.question}</h5>
+                            ${question.options.map((option, i) => {
+                                const isChecked = userAnswers[index] === option ? 'checked' : ''; // Check if this option was previously selected
+                                return `
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="question${index}" id="option${i+1}_${index}" value="${option}" ${isChecked}>
+                                        <label class="form-check-label" for="option${i+1}_${index}">
+                                            ${option}
+                                        </label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+    
+                        <!-- Timer Display -->
+                        <div id="timer" class="align-self-center">
+                            Time Left: <span id="time">${timeLeft}</span> seconds
+                        </div>
+                    </div>
+                </div>
+            `;
+    
+            // Display Previous and Next buttons
+            const navigationContainer = document.getElementById('navigation-buttons');
+            navigationContainer.innerHTML = '';  // Clear previous buttons
+    
+            // Add Previous button if not the first question
+            if (index > 0) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(-1)">Previous</button>
+                `;
+            }
+    
+            // Add Next button if not the last question
+            if (index < questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(1)">Next</button>
+                `;
+            }
+    
+            // Optionally, add a submit button if on the last question
+            if (index === questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-success" onclick="submitQuiz()">Submit Quiz</button>
+                `;
+            }
+        }
+    
+        function navigateQuestion(direction) {
+            // Save the selected answer for the current question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer
+            }
+    
+            // Clear the timer for the previous question
+            clearInterval(timer);
+    
+            // Move to the next question
+            currentQuestionIndex += direction;
+    
+            // Display the new question
+            displayQuestion(currentQuestionIndex);
+        }
+    
+        function startTimer() {
+            // Start the countdown
+            timer = setInterval(() => {
+                timeLeft--;  // Decrease time
+                document.getElementById('time').textContent = timeLeft;  // Update timer display
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);  // Stop timer when time runs out
+                    navigateQuestion(1);  // Automatically move to the next question
+                }
+            }, 1000);
+        }
+    
+        function submitQuiz() {
+            let score = 0;  // Reset score before starting the evaluation
+    
+            // Ensure that the answer is saved for the last question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer for the last question if needed
+            }
+    
+            // Evaluate each question
+            for (let i = 0; i < questions.length; i++) {
+                const correctAnswer = questions[i].answer;  // Get the correct answer text
+                
+                // Ensure we have an answer stored for this question
+                if (userAnswers[i] === correctAnswer) {
+                    score++;  // Increment score if the answer is correct
+                }
+            }
+    
+            // Display the score
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('navigation-buttons').style.display = 'none';
+            document.getElementById('score-section').style.display = 'block';
+            document.getElementById('score-text').textContent = `You scored ${score} out of ${questions.length}`;
+        }
+
+    function getQuestions(language, difficulty, numQuestions) {
+        const allQuestions = {
+        javascript: {
+            easy: [
+                    {
+                        question: "1. Which of the following is used to declare a variable in JavaScript?",
+                        options: ["A) var", "B) let", "C) const", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "2. How do you write a comment in JavaScript?",
+                        options: ["A) /* This is a comment */", "B) <!-- This is a comment -->", "C) // This is a comment", "D) Both A and C"],
+                        answer: "D) Both A and C"
+                    },
+                    {
+                        question: "3. What is the correct syntax to declare a constant in JavaScript?",
+                        options: ["A) const name;", "B) const name = value;", "C) constant name = value;", "D) name = constant value;"],
+                        answer: "B) const name = value;"
+                    },
+                    {
+                        question: "4. Which of the following is a valid JavaScript array declaration?",
+                        options: ["A) var arr = [];", "B) var arr = {};", "C) var arr = new Array();", "D) Both A and C"],
+                        answer: "D) Both A and C"
+                    },
+                    {
+                        question: "5. How can you add a comment in a JavaScript file?",
+                        options: ["A) //", "B) <!-- -->", "C) /* */", "D) Both A and C"],
+                        answer: "D) Both A and C"
+                    },
+                    {
+                        question: "6. How do you create a function in JavaScript?",
+                        options: ["A) function myFunction() {}", "B) def myFunction() {}", "C) func myFunction() {}", "D) function: myFunction() {}"],
+                        answer: "A) function myFunction() {}"
+                    },
+                    {
+                        question: "7. Which operator is used to assign a value to a variable in JavaScript?",
+                        options: ["A) =", "B) ==", "C) ===", "D) :="],
+                        answer: "A) ="
+                    },
+                    {
+                        question: "8. Which of the following is a correct way to call a function in JavaScript?",
+                        options: ["A) call myFunction()", "B) myFunction()", "C) function myFunction()", "D) call() myFunction()"],
+                        answer: "B) myFunction()"
+                    },
+                    {
+                        question: "9. How do you check if a variable is an array in JavaScript?",
+                        options: ["A) Array.isArray()", "B) var.isArray()", "C) isArray() method", "D) None of the above"],
+                        answer: "A) Array.isArray()"
+                    },
+                    {
+                        question: "10. How do you create an object in JavaScript?",
+                        options: ["A) var obj = new Object();", "B) var obj = {};", "C) var obj = object();", "D) Both A and B"],
+                        answer: "D) Both A and B"
+                    },
+                    {
+                        question: "11. How do you write a JavaScript string?",
+                        options: ["A) var str = \"Hello\";", "B) var str = 'Hello';", "C) var str = `Hello`; ", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "12. Which of the following is a method to convert a string to a number in JavaScript?",
+                        options: ["A) Number()", "B) parseInt()", "C) parseFloat()", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "13. How do you make a JavaScript array empty?",
+                        options: ["A) arr = [];", "B) arr = new Array();", "C) arr.length = 0;", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "14. Which of the following statements will add a new item to an array?",
+                        options: ["A) array.push('new item')", "B) array.add('new item')", "C) array.append('new item')", "D) array.insert('new item')"],
+                        answer: "A) array.push('new item')"
+                    },
+                    {
+                        question: "15. What is the syntax for an arrow function in JavaScript?",
+                        options: ["A) function() => {}", "B) () => function {}", "C) () => {}", "D) function() => {}"],
+                        answer: "C) () => {}"
+                    },
+                    {
+                        question: "16. What method is used to round a number in JavaScript?",
+                        options: ["A) round()", "B) Math.round()", "C) Math.ceil()", "D) Math.floor()"],
+                        answer: "B) Math.round()"
+                    },
+                    {
+                        question: "17. What is the correct way to check for equality between two variables in JavaScript?",
+                        options: ["A) == ", "B) ===", "C) ==", "D) != "],
+                        answer: "B) ==="
+                    },
+                    {
+                        question: "18. What will be the output of the following code? console.log(3 == '3');",
+                        options: ["A) true", "B) false", "C) undefined", "D) NaN"],
+                        answer: "A) true"
+                    },
+                    {
+                        question: "19. Which event is triggered when the user clicks on an HTML element in JavaScript?",
+                        options: ["A) click", "B) mouseClick", "C) onClick", "D) onMouseClick"],
+                        answer: "A) click"
+                    },
+                    {
+                        question: "20. Which of the following methods is used to find the index of an element in an array in JavaScript?",
+                        options: ["A) indexOf()", "B) getIndex()", "C) findIndex()", "D) locateIndex()"],
+                        answer: "A) indexOf()"
+                    },
+                    {
+                        question: "21. How can you trigger a function call every 5 seconds in JavaScript?",
+                        options: ["A) setTimeout(myFunction, 5000);", "B) setInterval(myFunction, 5000);", "C) setInterval(myFunction(), 5000);", "D) Both A and B"],
+                        answer: "B) setInterval(myFunction, 5000);"
+                    },
+                    {
+                        question: "22. How do you convert a string into an array in JavaScript?",
+                        options: ["A) str.split('')", "B) array(str)", "C) str.toArray()", "D) None of the above"],
+                        answer: "A) str.split('')"
+                    },
+                    {
+                        question: "23. What does NaN stand for in JavaScript?",
+                        options: ["A) Not a Number", "B) New Array Number", "C) No Answer Needed", "D) None of the above"],
+                        answer: "A) Not a Number"
+                    },
+                    {
+                        question: "24. How do you check the data type of a variable in JavaScript?",
+                        options: ["A) typeOf()", "B) typeof", "C) instanceOf()", "D) None of the above"],
+                        answer: "B) typeof"
+                    },
+                    {
+                        question: "25. Which of the following is used to add a new property to an object in JavaScript?",
+                        options: ["A) object.property = value;", "B) object.addProperty('property', value);", "C) object.add('property', value);", "D) None of the above"],
+                        answer: "A) object.property = value;"
+                    },
+                    {
+                        question: "26. Which method can be used to merge two arrays in JavaScript?",
+                        options: ["A) merge()", "B) combine()", "C) concat()", "D) append()"],
+                        answer: "C) concat()"
+                    },
+                    {
+                        question: "27. How do you prevent the default behavior of an event in JavaScript?",
+                        options: ["A) event.preventDefault();", "B) event.cancel();", "C) event.stopPropagation();", "D) event.prevent();"],
+                        answer: "A) event.preventDefault();"
+                    },
+                    {
+                        question: "28. What will be the result of the following code? console.log(2 + 2 + '2');",
+                        options: ["A) 4", "B) 22", "C) 24", "D) NaN"],
+                        answer: "B) 22"
+                    },
+                    {
+                        question: "29. What is the default value of an uninitialized variable in JavaScript?",
+                        options: ["A) null", "B) undefined", "C) 0", "D) NaN"],
+                        answer: "B) undefined"
+                    },
+                    {
+                        question: "30. Which of the following is not a primitive data type in JavaScript?",
+                        options: ["A) string", "B) number", "C) object", "D) boolean"],
+                        answer: "C) object"
+                    }
+                ],
+                medium: [
+                        {
+                            question: "1. Which function is used to parse a string to an integer in JavaScript?",
+                            options: ["A) parseInt()", "B) toInteger()", "C) Number()", "D) convertToInteger()"],
+                            answer: "A) parseInt()"
+                        },
+                        {
+                            question: "2. What will the following code return?\n\nlet x = [1, 2, 3];\nx.push(4);\nconsole.log(x);",
+                            options: ["A) [1, 2, 3, 4]", "B) [4, 1, 2, 3]", "C) 4", "D) undefined"],
+                            answer: "A) [1, 2, 3, 4]"
+                        },
+                        {
+                            question: "3. What is the output of the following code?\n\nconsole.log(5 + '5');",
+                            options: ["A) 55", "B) 10", "C) NaN", "D) undefined"],
+                            answer: "A) 55"
+                        },
+                        {
+                            question: "4. What will the following code print to the console?\n\nlet x = '10';\nlet y = 5;\nconsole.log(x + y);",
+                            options: ["A) 15", "B) 105", "C) NaN", "D) undefined"],
+                            answer: "B) 105"
+                        },
+                        {
+                            question: "5. What is the output of the following JavaScript code?\n\nfunction foo() {\n    return\n    {\n        name: 'John'\n    };\n}\nconsole.log(foo());",
+                            options: ["A) undefined", "B) { name: 'John' }", "C) SyntaxError", "D) null"],
+                            answer: "A) undefined"
+                        },
+                        {
+                            question: "6. How can you make a JavaScript function return multiple values?",
+                            options: ["A) By returning an array", "B) By returning an object", "C) By using a callback function", "D) All of the above"],
+                            answer: "D) All of the above"
+                        },
+                        {
+                            question: "7. How do you write a regular expression in JavaScript?",
+                            options: ["A) /[a-z]/", "B) new RegExp('[a-z]')", "C) Both A and B", "D) None of the above"],
+                            answer: "C) Both A and B"
+                        },
+                        {
+                            question: "8. How do you create a new promise in JavaScript?",
+                            options: ["A) new Promise(function(resolve, reject) {})", "B) new Promise(resolve, reject)", "C) createPromise(resolve, reject)", "D) new Promise(function) {}"],
+                            answer: "A) new Promise(function(resolve, reject) {})"
+                        },
+                        {
+                            question: "9. Which of the following will cause an infinite loop in JavaScript?",
+                            options: ["A) while(true) {}", "B) for(;;) {}", "C) do {} while(true);", "D) All of the above"],
+                            answer: "D) All of the above"
+                        },
+                        {
+                            question: "10. What is the output of the following code?\n\nconsole.log(1 + true);",
+                            options: ["A) 2", "B) NaN", "C) 'true'", "D) undefined"],
+                            answer: "A) 2"
+                        },
+                        {
+                            question: "11. What does the `this` keyword refer to in JavaScript?",
+                            options: ["A) The function itself", "B) The global object", "C) The current object", "D) The parent object"],
+                            answer: "C) The current object"
+                        },
+                        {
+                            question: "12. How do you stop a loop from executing in JavaScript?",
+                            options: ["A) break", "B) exit", "C) return", "D) end"],
+                            answer: "A) break"
+                        },
+                        {
+                            question: "13. What does the `bind()` method do in JavaScript?",
+                            options: ["A) Binds an event to an element", "B) Creates a new function with a specific `this` value", "C) Adds a new element to an array", "D) Binds an object to a function"],
+                            answer: "B) Creates a new function with a specific `this` value"
+                        },
+                        {
+                            question: "14. Which of the following statements will remove the last element of an array in JavaScript?",
+                            options: ["A) arr.pop()", "B) arr.shift()", "C) arr.remove()", "D) arr.delete()"],
+                            answer: "A) arr.pop()"
+                        },
+                        {
+                            question: "15. How do you create a method in a JavaScript object?",
+                            options: ["A) object.method = function() {}", "B) object.method = function() { return; }", "C) object.method = function() { };", "D) Both A and C"],
+                            answer: "D) Both A and C"
+                        },
+                        {
+                            question: "16. Which of the following methods is used to remove whitespace from both ends of a string in JavaScript?",
+                            options: ["A) trim()", "B) strip()", "C) remove()", "D) stripWhitespace()"],
+                            answer: "A) trim()"
+                        },
+                        {
+                            question: "17. What is the correct way to write a class in JavaScript?",
+                            options: ["A) class MyClass {}", "B) function MyClass() {}", "C) object MyClass {}", "D) function() MyClass() {}"],
+                            answer: "A) class MyClass {}"
+                        },
+                        {
+                            question: "18. How do you convert a string to lowercase in JavaScript?",
+                            options: ["A) str.toLowerCase()", "B) str.lower()", "C) toLowerCase(str)", "D) None of the above"],
+                            answer: "A) str.toLowerCase()"
+                        },
+                        {
+                            question: "19. What method is used to retrieve a substring in JavaScript?",
+                            options: ["A) substring()", "B) slice()", "C) substr()", "D) All of the above"],
+                            answer: "D) All of the above"
+                        },
+                        {
+                            question: "20. What does the `setInterval()` function do in JavaScript?",
+                            options: ["A) Executes a function every specified number of milliseconds", "B) Executes a function once after the specified time", "C) Executes a function multiple times at random intervals", "D) None of the above"],
+                            answer: "A) Executes a function every specified number of milliseconds"
+                        },
+                        {
+                            question: "21. How do you prevent a form from submitting in JavaScript?",
+                            options: ["A) event.preventDefault();", "B) form.preventSubmit();", "C) return false;", "D) Both A and C"],
+                            answer: "D) Both A and C"
+                        },
+                        {
+                            question: "22. How can you make an AJAX request in JavaScript?",
+                            options: ["A) XMLHttpRequest()", "B) fetch()", "C) Both A and B", "D) None of the above"],
+                            answer: "C) Both A and B"
+                        },
+                        {
+                            question: "23. Which of the following is the correct syntax to declare a JavaScript class?",
+                            options: ["A) class MyClass {}", "B) function MyClass() {}", "C) object MyClass {}", "D) function() MyClass() {}"],
+                            answer: "A) class MyClass {}"
+                        },
+                        {
+                            question: "24. How do you remove an element from an array in JavaScript?",
+                            options: ["A) arr.pop()", "B) arr.shift()", "C) arr.splice()", "D) arr.delete()"],
+                            answer: "C) arr.splice()"
+                        },
+                        {
+                            question: "25. What does the `Array.map()` method do in JavaScript?",
+                            options: ["A) Iterates over an array and performs a transformation", "B) Creates a new array with the results of applying a function", "C) Both A and B", "D) None of the above"],
+                            answer: "C) Both A and B"
+                        },
+                        {
+                            question: "26. Which of the following methods is used to add an element at the beginning of an array?",
+                            options: ["A) push()", "B) unshift()", "C) append()", "D) prepend()"],
+                            answer: "B) unshift()"
+                        },
+                        {
+                            question: "27. What is the correct way to test if a variable is an array in JavaScript?",
+                            options: ["A) Array.isArray(variable)", "B) variable.isArray()", "C) Array.check(variable)", "D) None of the above"],
+                            answer: "A) Array.isArray(variable)"
+                        },
+                        {
+                            question: "28. How can you convert an object to a JSON string in JavaScript?",
+                            options: ["A) JSON.stringify(object)", "B) JSON.parse(object)", "C) object.toJSON()", "D) object.toString()"],
+                            answer: "A) JSON.stringify(object)"
+                        },
+                        {
+                            question: "29. What does `localStorage` do in JavaScript?",
+                            options: ["A) Stores data for the duration of the session", "B) Stores data on the client-side", "C) Stores data in the browser cache", "D) None of the above"],
+                            answer: "B) Stores data on the client-side"
+                        },
+                        {
+                            question: "30. Which function is used to parse a JSON string in JavaScript?",
+                            options: ["A) JSON.parse()", "B) JSON.stringify()", "C) parseJSON()", "D) None of the above"],
+                            answer: "A) JSON.parse()"
+                        }
+                    ],
+    hard: [
+        {
+            question: "1. What is the purpose of the `async` keyword in JavaScript?",
+            options: ["A) Makes a function asynchronous", "B) Ensures a function executes immediately", "C) Makes a function return a promise", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "2. How do you create a promise in JavaScript?",
+            options: ["A) new Promise(resolve, reject)", "B) new Promise(function(resolve, reject) {})", "C) promise.new(function(resolve, reject))", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "3. What is the result of calling `Array.prototype.map()` on an object in JavaScript?",
+            options: ["A) Creates a new array from the object's values", "B) Converts the object into an array", "C) Throws an error", "D) None of the above"],
+            answer: "C) Throws an error"
+        },
+        {
+            question: "4. How do you define a getter in a JavaScript class?",
+            options: ["A) get property() {}", "B) get property => {}", "C) get() property {}", "D) getter property() {}"],
+            answer: "A) get property() {}"
+        },
+        {
+            question: "5. What does the `this` keyword refer to in a method within a class in JavaScript?",
+            options: ["A) The class itself", "B) The current object instance", "C) The global object", "D) The function context"],
+            answer: "B) The current object instance"
+        },
+        {
+            question: "6. What does `Symbol()` return in JavaScript?",
+            options: ["A) A unique value", "B) A number", "C) A string", "D) A boolean"],
+            answer: "A) A unique value"
+        },
+        {
+            question: "7. What does `Function.prototype.call()` do in JavaScript?",
+            options: ["A) Calls a function with a specified `this` value", "B) Returns a new function", "C) Calls a function immediately", "D) Creates a new function"],
+            answer: "A) Calls a function with a specified `this` value"
+        },
+        {
+            question: "8. What does the `finally` block do in a JavaScript `try...catch` statement?",
+            options: ["A) Executes code after the `catch` block", "B) Executes regardless of whether there is an error or not", "C) Executes before the `catch` block", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "9. What is the purpose of the `WeakMap` in JavaScript?",
+            options: ["A) Stores objects and ensures their memory management is handled automatically", "B) Stores keys as weak references", "C) Allows non-primitive keys", "D) All of the above"],
+            answer: "D) All of the above"
+        },
+        {
+            question: "10. How can you prevent a method from being inherited in a subclass in JavaScript?",
+            options: ["A) By defining it as `static`", "B) By defining it as `private`", "C) By defining it as `final`", "D) By defining it as `sealed`"],
+            answer: "B) By defining it as `private`"
+        },
+        {
+            question: "11. What does `setTimeout()` return in JavaScript?",
+            options: ["A) A timeout ID", "B) The value returned from the function", "C) The time elapsed", "D) None of the above"],
+            answer: "A) A timeout ID"
+        },
+        {
+            question: "12. What will be the output of the following code?\n\nconsole.log(0.1 + 0.2 === 0.3);",
+            options: ["A) true", "B) false", "C) undefined", "D) NaN"],
+            answer: "B) false"
+        },
+        {
+            question: "13. Which of the following is the most efficient way to find the index of an item in an array in JavaScript?",
+            options: ["A) array.indexOf(item)", "B) array.findIndex(item)", "C) array.includes(item)", "D) Both A and B"],
+            answer: "A) array.indexOf(item)"
+        },
+        {
+            question: "14. What is the difference between `==` and `===` in JavaScript?",
+            options: ["A) `==` checks for equality of value, while `===` checks for value and type", "B) `===` checks for equality of value and type, while `==` checks for value", "C) There is no difference", "D) `==` is used for comparison of arrays, `===` is for objects"],
+            answer: "A) `==` checks for equality of value, while `===` checks for value and type"
+        },
+        {
+            question: "15. What is the `Reflect` object used for in JavaScript?",
+            options: ["A) Provides methods for interacting with objects", "B) Creates a new object", "C) Allows reflection of code execution", "D) None of the above"],
+            answer: "A) Provides methods for interacting with objects"
+        },
+        {
+            question: "16. What is the purpose of `Object.freeze()` in JavaScript?",
+            options: ["A) Prevents modification of an object", "B) Makes an object immutable", "C) Prevents properties from being deleted", "D) All of the above"],
+            answer: "D) All of the above"
+        },
+        {
+            question: "17. How do you handle errors in JavaScript?",
+            options: ["A) try...catch", "B) try...finally", "C) throw statement", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "18. What is `Promise.all()` used for in JavaScript?",
+            options: ["A) Waits for multiple promises to resolve", "B) Returns a single promise that resolves when all promises resolve", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "19. How do you create a deep clone of an object in JavaScript?",
+            options: ["A) Using `JSON.parse()` and `JSON.stringify()`", "B) Using `Object.assign()`", "C) Using a loop", "D) Both A and B"],
+            answer: "A) Using `JSON.parse()` and `JSON.stringify()`"
+        },
+        {
+            question: "20. Which method allows you to check if a property exists on an object in JavaScript?",
+            options: ["A) Object.hasOwnProperty()", "B) in operator", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "21. What will be the output of the following code?\n\nlet x = [1, 2, 3];\nx.length = 2;\nconsole.log(x);",
+            options: ["A) [1, 2]", "B) [1, 2, 3]", "C) []", "D) [2, 3]"],
+            answer: "A) [1, 2]"
+        },
+        {
+            question: "22. How do you define a class in JavaScript?",
+            options: ["A) class MyClass {}", "B) function MyClass() {}", "C) function() MyClass() {}", "D) Both A and B"],
+            answer: "A) class MyClass {}"
+        },
+        {
+            question: "23. What does the `bind()` method do in JavaScript?",
+            options: ["A) Binds a function to an object", "B) Sets the value of `this` in a function", "C) Creates a new function", "D) All of the above"],
+            answer: "D) All of the above"
+        },
+        {
+            question: "24. What is the purpose of `module.exports` in Node.js?",
+            options: ["A) Exports variables from a module", "B) Exports functions from a module", "C) Exports the whole module", "D) Both A and B"],
+            answer: "D) Both A and B"
+        },
+        {
+            question: "25. How do you merge multiple objects in JavaScript?",
+            options: ["A) Object.merge()", "B) Object.assign()", "C) Object.combine()", "D) None of the above"],
+            answer: "B) Object.assign()"
+        },
+        {
+            question: "26. Which of the following methods is used to convert a string to a number in JavaScript?",
+            options: ["A) parseInt()", "B) toNumber()", "C) Number()", "D) Both A and C"],
+            answer: "D) Both A and C"
+        },
+        {
+            question: "27. What will be the output of the following code?\n\nlet obj = { a: 1, b: 2 };\nconsole.log(Object.keys(obj));",
+            options: ["A) ['a', 'b']", "B) ['1', '2']", "C) { a: 1, b: 2 }", "D) ['object', 'keys']"],
+            answer: "A) ['a', 'b']"
+        },
+        {
+            question: "28. What does `setTimeout()` do in JavaScript?",
+            options: ["A) Executes a function after a specified time", "B) Repeats a function at regular intervals", "C) Waits for a function to finish before continuing", "D) None of the above"],
+            answer: "A) Executes a function after a specified time"
+        },
+        {
+            question: "29. How do you create an immutable object in JavaScript?",
+            options: ["A) By using `Object.freeze()`", "B) By using `Object.preventExtensions()`", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        },
+        {
+            question: "30. What is the purpose of `yield` in JavaScript?",
+            options: ["A) Pauses a generator function", "B) Returns a value from a generator function", "C) Both A and B", "D) None of the above"],
+            answer: "C) Both A and B"
+        }
+    ]
+        }
+    };
+
+    return allQuestions[language][difficulty].slice(0, numQuestions); // Ensure number of questions
+
+    }
+    </script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="text-center">Programming Quiz</h1>
+
+    <!-- Instructions Section -->
+    <div class="instructions">
+        <h3>Quiz Instructions</h3>
+        <p>Please read the following instructions carefully before starting the quiz:</p>
+        <ul>
+            <li>Each question has multiple choices. Select the correct answer.</li>
+            <li>You can navigate between questions using the 'Next' and 'Previous' buttons.</li>
+            <li>Submit the quiz when you are finished.</li>
+            <li>Your score will be displayed at the end.</li>
+        </ul>
+        <input type="checkbox" id="checkbox"class="mt-3"> I accept all terms & conditions.
+    </div>
+
+<!-- Start Quiz Button -->
+    <button class="btn btn-primary btn-block mt-3" id="startQuiz"onclick="Agree()">Enter</button>
+
+
+<!-- Bootstrap JS & Dependencies -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    function Agree(){
+    const checkbox =document.getElementById("checkbox")
+    if(checkbox.checked){
+    window.location.href = "index2.html";
+    }
+    else{
+        alert("Please accept the terms and conditions");
+    }
+}
+</script>
+</body>
+</html>
+</div>
+<!-- Difficulty Level Selection -->
+<!-- <div class="form-group">
+    <label for="difficulty">Select Difficulty</label>
+    <select class="form-control" id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+    </select>
+</div> -->
+
+<!-- Question Count Selection -->
+<!-- <div class="form-group">
+    <label for="questions">Select Number of Questions</label>
+    <select class="form-control" id="questions">
+        <option value="10">10 Questions</option>
+        <option value="20">20 Questions</option>
+        <option value="30">30 Questions</option>
+    </select>
+</div> -->
+
+<!-- Quiz Container -->
+<!-- <div id="quiz-container" style="margin: 5px; padding: 15px;" class="question" style="display:none;">
+    <h2 id="quiz-title"></h2>
+    <div id="quiz-questions"></div>
+    <div id="navigation-buttons"></div>
+</div> -->

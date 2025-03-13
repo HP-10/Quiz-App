@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Ensure full height of the viewport */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        /* Flexbox for centering the content */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+            text-align: center;
+        }
+
+        /* Adjust card layout */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .language-card {
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+            width: 250px; /* Increased card width */
+            height: 250px; /* Increased card height */
+            margin: 20px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Added shadow effect for depth */
+        }
+
+        .language-card:hover {
+            transform: scale(1.05);
+        }
+
+        .language-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures image covers the top part of the card */
+            border-radius: 5px 5px 0 0;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .card-title {
+            font-size: 1.75rem; /* Larger font size */
+        }
+
+        .btn-start {
+            width: 100%;
+            margin-top: 30px; /* Increased margin for spacing */
+            padding: 15px;
+            font-size: 1.25rem; /* Larger button text */
+        }
+
+        /* Extra responsiveness for smaller screens */
+        @media (max-width: 768px) {
+            .language-card {
+                width: 250px;
+                height: 350px;
+            }
+
+            .btn-start {
+                font-size: 1rem;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="html-card" onclick="selectLanguage('html')">
+                        <img src="html.png" alt="HTML">
+                        <div class="card-body">
+                            <h5 class="card-title">HTML</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="java-card" onclick="selectLanguage('java')">
+                        <img src="java.png" alt="Java">
+                        <div class="card-body">
+                            <h5 class="card-title">Java</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="js-card" onclick="selectLanguage('js')">
+                        <img src="js.png" alt="JavaScript">
+                        <div class="card-body">
+                            <h5 class="card-title">JavaScript</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="php-card" onclick="selectLanguage('php')">
+                        <img src="php.png" alt="PHP">
+                        <div class="card-body">
+                            <h5 class="card-title">PHP</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="python-card" onclick="selectLanguage('python')">
+                        <img src="python.png" alt="Python">
+                        <div class="card-body">
+                            <h5 class="card-title">Python</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card language-card" id="ds-card" onclick="selectLanguage('ds')">
+                        <img src="ds.png" alt="Data Structure">
+                        <div class="card-body">
+                            <h5 class="card-title">Data Structure</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS & Dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        //Function for language selection
+function selectLanguage(language) {
+    console.log('Selected Language:', language);
+    if(language==="html"){
+        window.location.href = "html_page.html";
+    }
+    else if(language==="java"){
+        window.location.href = "java_page.html";
+    }
+    if(language==="js"){
+        window.location.href = "javascript_page.html";
+    }
+    if(language==="php"){
+        window.location.href = "php_page.html";
+    }
+    if(language==="python"){
+        window.location.href = "python_page.html";
+    }
+    if(language==="ds"){
+        window.location.href = "ds_page.html";
+    }
+}
+// function selectLanguage(language) {
+//     console.log('Selected Language:', language);
+//     // Redirect to the difficulty and question selection page with the language as a query parameter
+//     window.location.href = "quiz_option.html?language=" + language;
+// }
+    </script>
+
+</body>
+</html>

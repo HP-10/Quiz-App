@@ -1,0 +1,208 @@
+1. 
+What tag is used to define a hyperlink in HTML?
+
+A.
+<link>
+
+
+B.
+<a>
+
+
+C.
+<href>
+
+
+D.
+<hyper>
+
+Correct Answer
+B. <a>
+
+2. 
+Which tag creates the largest heading in HTML?
+
+A.
+<h6>
+
+
+B.
+<h1>
+
+
+C.
+<header>
+
+
+D.
+<head>
+
+Correct Answer
+B. <h1>
+
+3. 
+What is the purpose of the <br> tag?
+
+A.
+Start a new paragraph
+
+
+B.
+Break line
+
+
+C.
+Bold text
+
+
+D.
+Create a list
+
+Correct Answer
+B. Break line
+
+4. 
+How do you add an image to a webpage?
+
+A.
+<img src="url">
+
+
+B.
+<src="url">
+
+
+C.
+<image="url">
+
+
+D.
+<media src="url">
+
+Correct Answer
+A. <img src="url">
+
+5. 
+Which HTML tag is used to define a table cell?
+
+A.
+<table>
+
+
+B.
+<td>
+
+
+C.
+<th>
+
+
+D.
+<tr>
+
+Correct Answer
+B. <td>
+
+6. 
+What does the <ul> tag represent?
+
+A.
+Ordered list
+
+
+B.
+Unordered list
+
+
+C.
+Underlined list
+
+
+D.
+Universal list
+
+Correct Answer
+B. Unordered list
+
+ 7. 
+Which tag is used to make text bold?
+
+A.
+<strong>
+
+
+B.
+<bold>
+
+
+C.
+<b>
+
+
+D.
+<em>
+
+Correct Answer
+C. <b>
+
+ 8. 
+How is a comment inserted in an HTML document?
+
+A.
+<!-- comment -->
+
+
+B.
+// comment //
+
+
+C.
+/* comment */
+
+
+D.
+# comment
+
+Correct Answer
+A. <!-- comment -->
+ 9. 
+What HTML element is used for a top-level heading?
+
+A.
+<h1>
+
+
+B.
+<heading>
+
+
+C.
+<head>
+
+
+D.
+<header>
+
+Correct Answer
+A. <h1>
+
+10. 
+Which attribute specifies the URL in an <a> tag for linking?
+
+A.
+Link
+
+
+B.
+Href
+
+
+C.
+Src
+
+
+D.
+Url
+
+Correct Answer
+B. Href

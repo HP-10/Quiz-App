@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center" id="quiz-title"></h1>
+    
+        <!-- Quiz Questions -->
+        <div id="quiz-container"></div>
+    
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="text-center mt-3"></div>
+    
+        <!-- Score Section -->
+        <div id="score-section" class="text-center mt-5" style="display: none;">
+            <h3>Your Score:</h3>
+            <p id="score-text"></p>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];  // Array to store user answers
+        let timer;
+        let timeLeft;
+        let timerRunning = false;
+    
+        // Retrieve URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty');
+        const numQuestions = parseInt(urlParams.get('questions'));
+    
+        // Set quiz title
+        document.getElementById('quiz-title').textContent = `HTML - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} - ${numQuestions} Questions`;
+    
+        // Set time per question based on difficulty
+        function getTimeForQuestion(difficulty) {
+            switch (difficulty) {
+                case 'easy':
+                    return 30;  // 30 seconds for easy mode
+                case 'medium':
+                    return 45;  // 45 seconds for medium mode
+                case 'hard':
+                    return 60;  // 60 seconds for hard mode
+                default:
+                    return 30;  // Default to easy if difficulty is not set
+            }
+        }
+    
+        // Generate quiz questions based on parameters
+        questions = getQuestions('html', difficulty, numQuestions);
+        displayQuestion(currentQuestionIndex);
+    
+        function displayQuestion(index) {
+            const questionContainer = document.getElementById('quiz-container');
+            const question = questions[index];
+    
+            // Set timer for the current question
+            timeLeft = getTimeForQuestion(difficulty);
+    
+            // Clear any previous timer and start a new one
+            clearInterval(timer);
+            startTimer();
+    
+            // Create question HTML using innerHTML
+            questionContainer.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body d-flex justify-content-between">
+                        <!-- Question Text -->
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">${question.question}</h5>
+                            ${question.options.map((option, i) => {
+                                const isChecked = userAnswers[index] === option ? 'checked' : ''; // Check if this option was previously selected
+                                return `
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="question${index}" id="option${i+1}_${index}" value="${option}" ${isChecked}>
+                                        <label class="form-check-label" for="option${i+1}_${index}">
+                                            ${option}
+                                        </label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+    
+                        <!-- Timer Display -->
+                        <div id="timer" class="align-self-center">
+                            Time Left: <span id="time">${timeLeft}</span> seconds
+                        </div>
+                    </div>
+                </div>
+            `;
+    
+            // Display Previous and Next buttons
+            const navigationContainer = document.getElementById('navigation-buttons');
+            navigationContainer.innerHTML = '';  // Clear previous buttons
+    
+            // Add Previous button if not the first question
+            if (index > 0) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(-1)">Previous</button>
+                `;
+            }
+    
+            // Add Next button if not the last question
+            if (index < questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(1)">Next</button>
+                `;
+            }
+    
+            // Optionally, add a submit button if on the last question
+            if (index === questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-success" onclick="submitQuiz()">Submit Quiz</button>
+                `;
+            }
+        }
+    
+        function navigateQuestion(direction) {
+            // Save the selected answer for the current question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer
+            }
+    
+            // Clear the timer for the previous question
+            clearInterval(timer);
+    
+            // Move to the next question
+            currentQuestionIndex += direction;
+    
+            // Display the new question
+            displayQuestion(currentQuestionIndex);
+        }
+    
+        function startTimer() {
+            // Start the countdown
+            timer = setInterval(() => {
+                timeLeft--;  // Decrease time
+                document.getElementById('time').textContent = timeLeft;  // Update timer display
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);  // Stop timer when time runs out
+                    navigateQuestion(1);  // Automatically move to the next question
+                }
+            }, 1000);
+        }
+    
+        function submitQuiz() {
+            let score = 0;  // Reset score before starting the evaluation
+    
+            // Ensure that the answer is saved for the last question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer for the last question if needed
+            }
+    
+            // Evaluate each question
+            for (let i = 0; i < questions.length; i++) {
+                const correctAnswer = questions[i].answer;  // Get the correct answer text
+                
+                // Ensure we have an answer stored for this question
+                if (userAnswers[i] === correctAnswer) {
+                    score++;  // Increment score if the answer is correct
+                }
+            }
+    
+            // Display the score
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('navigation-buttons').style.display = 'none';
+            document.getElementById('score-section').style.display = 'block';
+            document.getElementById('score-text').textContent = `You scored ${score} out of ${questions.length}`;
+        }
+
+    function getQuestions(language, difficulty, numQuestions) {
+        const allQuestions = {
+        html: {
+            easy: [
+            {
+                "question": "1. What does HTML stand for?",
+                "options": ["A) Hyper Text Markup Language", "B) High Text Markup Language", "C) Hyperlinks and Text Markup Language", "D) None of the above"],
+                "answer": "A) Hyper Text Markup Language"
+            },
+            {
+                "question": "2. Which tag is used to create a link in HTML?",
+                "options": ["A) < a >", "B) < link >", "C) < url >", "D) < href >"],
+                "answer": "A) < a >"
+            },
+            {
+                "question": "3. Which tag is used to display images in HTML?",
+                "options": ["A) < img >", "B) < image >", "C) < src >", "D) < picture >"],
+                "answer": "A) < img >"
+            },
+            {
+                "question": "4. What is the correct HTML tag for a paragraph?",
+                "options": ["A) < p >", "B) < para >", "C) < text >", "D) < paragraph >"],
+                "answer": "A) < p >"
+            },
+            {
+                "question": "5. Which tag is used to create an unordered list?",
+                "options": ["A) < ul >", "B) < ol >", "C) < li >", "D) < list >"],
+                "answer": "A) < ul >"
+            },
+            {
+                "question": "6. How do you create a checkbox in HTML?",
+                "options": ["A) < input type='checkbox' >", "B) < checkbox >", "C) < input type='radio' >", "D) < check >"],
+                "answer": "A) < input type='checkbox' >"
+            },
+            {
+                "question": "7. Which tag is used for the largest header in HTML?",
+                "options": ["A) < h1 >", "B) < h6 >", "C) < heading >", "D) < title >"],
+                "answer": "A) < h1 >"
+            },
+            {
+                "question": "8. Which tag is used to create a line break?",
+                "options": ["A) < br >", "B) < lb >", "C) < linebreak >", "D) < break >"],
+                "answer": "A) < br >"
+            },
+            {
+                "question": "9. What is the correct HTML for inserting a line break?",
+                "options": ["A) < br >", "B) < hr >", "C) < break >", "D) < newline >"],
+                "answer": "A) < br >"
+            },
+            {
+                "question": "10. Which tag is used for creating a table in HTML?",
+                "options": ["A) < table >", "B) < tab >", "C) < tr >", "D) < tabelle >"],
+                "answer": "A) < table >"
+            },
+            {
+                "question": "11. What does the < head > tag contain?",
+                "options": ["A) The title of the document", "B) The body of the document", "C) Metadata of the document", "D) None of the above"],
+                "answer": "C) Metadata of the document"
+            },
+            {
+                "question": "12. Which tag is used to define the main content of an HTML page?",
+                "options": ["A) < main >", "B) < content >", "C) < body >", "D) < section >"],
+                "answer": "A) < main >"
+            },
+            {
+                "question": "13. How do you specify a font size in HTML?",
+                "options": ["A) < font size='12px' >", "B) < text size='12px' >", "C) < style size='12px' >", "D) < h1 size='12px' >"],
+                "answer": "A) < font size='12px' >"
+            },
+            {
+                "question": "14. What is the purpose of the < footer > tag in HTML?",
+                "options": ["A) To define a footer for the document", "B) To create a link", "C) To add an image", "D) To add metadata"],
+                "answer": "A) To define a footer for the document"
+            },
+            {
+                "question": "15. Which HTML tag is used for displaying the title of the document in the browser?",
+                "options": ["A) < title >", "B) < head >", "C) < meta >", "D) < header >"],
+                "answer": "A) < title >"
+            },
+            {
+                "question": "16. Which of the following is used to define a hyperlink in HTML?",
+                "options": ["A) < link >", "B) < a >", "C) < url >", "D) < hyperlink >"],
+                "answer": "B) < a >"
+            },
+            {
+                "question": "17. What is the default behavior of the < a > tag?",
+                "options": ["A) Opens in the same window", "B) Opens in a new window", "C) Opens a pop-up", "D) None of the above"],
+                "answer": "A) Opens in the same window"
+            },
+            {
+                "question": "18. Which attribute is used to add a description of an image in HTML?",
+                "options": ["A) alt", "B) title", "C) description", "D) caption"],
+                "answer": "A) alt"
+            },
+            {
+                "question": "19. Which HTML tag is used to create a button?",
+                "options": ["A) < button >", "B) < input type='button' >", "C) < input >", "D) < action >"],
+                "answer": "A) < button >"
+            },
+            {
+                "question": "20. Which tag is used to define an ordered list in HTML?",
+                "options": ["A) < ol >", "B) < ul >", "C) < li >", "D) < list >"],
+                "answer": "A) < ol >"
+            },
+            {
+                "question": "21. How do you create a form in HTML?",
+                "options": ["A) < form >", "B) < input >", "C) < button >", "D) < fields >"],
+                "answer": "A) < form >"
+            },
+            {
+                "question": "22. Which tag is used to embed audio in an HTML document?",
+                "options": ["A) < audio >", "B) < sound >", "C) < music >", "D) < embed >"],
+                "answer": "A) < audio >"
+            },
+            {
+                "question": "23. Which tag is used to embed a video in an HTML document?",
+                "options": ["A) < video >", "B) < media >", "C) < embed >", "D) < movie >"],
+                "answer": "A) < video >"
+            },
+            {
+                "question": "24. Which of the following is used to define a clickable area inside an image?",
+                "options": ["A) < map >", "B) < area >", "C) < object >", "D) < click >"],
+                "answer": "B) < area >"
+            },
+            {
+                "question": "25. Which attribute is used to specify the width of an image?",
+                "options": ["A) width", "B) size", "C) scale", "D) height"],
+                "answer": "A) width"
+            },
+            {
+                "question": "26. What is the correct way to define the charset in an HTML document?",
+                "options": ["A) < meta charset='UTF-8' >", "B) < meta encoding='UTF-8' >", "C) < charset='UTF-8' >", "D) < meta lang='UTF-8' >"],
+                "answer": "A) < meta charset='UTF-8' >"
+            },
+            {
+                "question": "27. Which HTML tag is used to create a table row?",
+                "options": ["A) < tr >", "B) < td >", "C) < th >", "D) < table >"],
+                "answer": "A) < tr >"
+            },
+            {
+                "question": "28. Which tag is used to specify the metadata of an HTML document?",
+                "options": ["A) < meta >", "B) < header >", "C) < head >", "D) < title >"],
+                "answer": "A) < meta >"
+            },
+            {
+                "question": "29. Which tag is used to define a table header in HTML?",
+                "options": ["A) < th >", "B) < td >", "C) < tr >", "D) < table >"],
+                "answer": "A) < th >"
+            },
+            {
+                "question": "30. Which tag is used to define the body of the HTML document?",
+                "options": ["A) < body >", "B) < html >", "C) < content >", "D) < main >"],
+                "answer": "A) < body >"
+            }
+        ],
+        medium: [
+        {
+            "question": "1. What is the purpose of the < meta > tag in HTML?",
+            "options": ["A) To add metadata about the page", "B) To add an image", "C) To add a link", "D) To style the page"],
+            "answer": "A) To add metadata about the page"
+        },
+        {
+            "question": "2. Which HTML tag is used to define the title of a document?",
+            "options": ["A) < title >", "B) < head >", "C) < meta >", "D) < h1 >"],
+            "answer": "A) < title >"
+        },
+        {
+            "question": "3. Which attribute is used to define the destination URL of a link?",
+            "options": ["A) href", "B) src", "C) link", "D) url"],
+            "answer": "A) href"
+        },
+        {
+            "question": "4. Which HTML tag is used to define an ordered list?",
+            "options": ["A) < ol >", "B) < ul >", "C) < list >", "D) < li >"],
+            "answer": "A) < ol >"
+        },
+        {
+            "question": "5. Which element is used to create a table row in HTML?",
+            "options": ["A) < tr >", "B) < td >", "C) < th >", "D) < trrow >"],
+            "answer": "A) < tr >"
+        },
+        {
+            "question": "6. Which HTML element is used to define a list item?",
+            "options": ["A) < li >", "B) < ol >", "C) < ul >", "D) < list >"],
+            "answer": "A) < li >"
+        },
+        {
+            "question": "7. What does the < link > tag do in HTML?",
+            "options": ["A) Links external resources", "B) Creates an anchor tag", "C) Embeds a video", "D) Defines the document's title"],
+            "answer": "A) Links external resources"
+        },
+        {
+            "question": "8. Which HTML tag is used to create a form?",
+            "options": ["A) < form >", "B) < input >", "C) < submit >", "D) < button >"],
+            "answer": "A) < form >"
+        },
+        {
+            "question": "9. What is the purpose of the alt attribute in an image tag?",
+            "options": ["A) To provide an alternate text for the image", "B) To define the image's alignment", "C) To specify the image's dimensions", "D) To provide a caption for the image"],
+            "answer": "A) To provide an alternate text for the image"
+        },
+        {
+            "question": "10. Which HTML tag is used for input fields?",
+            "options": ["A) < input >", "B) < field >", "C) < text >", "D) < form >"],
+            "answer": "A) < input >"
+        },
+        {
+            "question": "11. What is the correct HTML tag to define a table cell?",
+            "options": ["A) < td >", "B) < tr >", "C) < th >", "D) < table >"],
+            "answer": "A) < td >"
+        },
+        {
+            "question": "12. Which tag is used to define a button in HTML?",
+            "options": ["A) < button >", "B) < submit >", "C) < input >", "D) < action >"],
+            "answer": "A) < button >"
+        },
+        {
+            "question": "13. Which HTML tag is used to define the header of a document?",
+            "options": ["A) < header >", "B) < head >", "C) < h1 >", "D) < nav >"],
+            "answer": "A) < header >"
+        },
+        {
+            "question": "14. Which attribute is used to specify the source of an image?",
+            "options": ["A) src", "B) href", "C) link", "D) imgsrc"],
+            "answer": "A) src"
+        },
+        {
+            "question": "15. How do you create a link that opens in a new tab?",
+            "options": ["A) < a href='url' target='_blank' >", "B) < a href='url' newtab='true' >", "C) < a href='url' target='new' >", "D) < link href='url' >"],
+            "answer": "A) < a href='url' target='_blank' >"
+        },
+        {
+            "question": "16. Which tag is used to define the main content of an HTML page?",
+            "options": ["A) < main >", "B) < body >", "C) < section >", "D) < header >"],
+            "answer": "A) < main >"
+        },
+        {
+            "question": "17. Which HTML tag is used to define a navigation menu?",
+            "options": ["A) < nav >", "B) < menu >", "C) < link >", "D) < header >"],
+            "answer": "A) < nav >"
+        },
+        {
+            "question": "18. Which tag is used to define the footer of a document?",
+            "options": ["A) < footer >", "B) < footersection >", "C) < foot >", "D) < end >"],
+            "answer": "A) < footer >"
+        },
+        {
+            "question": "19. What is the function of the < br > tag in HTML?",
+            "options": ["A) It creates a line break", "B) It breaks the webpage into sections", "C) It defines a block element", "D) It creates a horizontal line"],
+            "answer": "A) It creates a line break"
+        },
+        {
+            "question": "20. Which attribute is used to specify the size of a text input box in HTML?",
+            "options": ["A) size", "B) width", "C) height", "D) textbox-size"],
+            "answer": "A) size"
+        },
+        {
+            "question": "21. Which tag is used to create an ordered list in HTML?",
+            "options": ["A) < ol >", "B) < ul >", "C) < list >", "D) < li >"],
+            "answer": "A) < ol >"
+        },
+        {
+            "question": "22. Which of the following is used to define a table header in HTML?",
+            "options": ["A) < th >", "B) < td >", "C) < tr >", "D) < table >"],
+            "answer": "A) < th >"
+        },
+        {
+            "question": "23. Which tag is used to define a table body in HTML?",
+            "options": ["A) < tbody >", "B) < tablebody >", "C) < body >", "D) < row >"],
+            "answer": "A) < tbody >"
+        },
+        {
+            "question": "24. Which tag is used to display bold text in HTML?",
+            "options": ["A) < b >", "B) < strong >", "C) < i >", "D) < bold >"],
+            "answer": "A) < b >"
+        },
+        {
+            "question": "25. What is the correct HTML for adding a background color to a page?",
+            "options": ["A) < body bgcolor='color' >", "B) < background color='color' >", "C) < body color='color' >", "D) < color background='color' >"],
+            "answer": "A) < body bgcolor='color' >"
+        },
+        {
+            "question": "26. Which tag is used to display italicized text in HTML?",
+            "options": ["A) < i >", "B) < em >", "C) < italic >", "D) < strong >"],
+            "answer": "A) < i >"
+        },
+        {
+            "question": "27. What is the correct HTML tag for inserting an image?",
+            "options": ["A) < img >", "B) < image >", "C) < src >", "D) < picture >"],
+            "answer": "A) < img >"
+        },
+        {
+            "question": "28. Which HTML tag is used to define a hyperlink?",
+            "options": ["A) < a >", "B) < link >", "C) < url >", "D) < href >"],
+            "answer": "A) < a >"
+        },
+        {
+            "question": "29. What does the < br > tag represent in HTML?",
+            "options": ["A) Line break", "B) Border", "C) Break", "D) Bold"],
+            "answer": "A) Line break"
+        },
+        {
+            "question": "30. Which tag is used for creating a comment in HTML?",
+            "options": ["A) < !-- comment -- >", "B) < comment > comment < /comment >", "C) // comment", "D) /* comment */"],
+            "answer": "A) < !-- comment -- >"
+        },
+        {
+            "question": "31. Which tag is used to define a paragraph in HTML?",
+            "options": ["A) < p >", "B) < para >", "C) < text >", "D) < paragraph >"],
+            "answer": "A) < p >"
+        },
+        {
+            "question": "32. How do you make a bullet list in HTML?",
+            "options": ["A) < ul >", "B) < ol >", "C) < li >", "D) < list >"],
+            "answer": "A) < ul >"
+        }
+    ],
+    hard: [
+        {
+            "question": "1. Which of the following elements is NOT a valid HTML element?",
+            "options": ["A) < div >", "B) < span >", "C) < figure >", "D) < container >"],
+            "answer": "D) < container >"
+        },
+        {
+            "question": "2. What is the default value of the display property in CSS?",
+            "options": ["A) block", "B) inline", "C) none", "D) inline-block"],
+            "answer": "A) block"
+        },
+        {
+            "question": "3. Which HTML element is used to define metadata for the document?",
+            "options": ["A) < head >", "B) < body >", "C) < meta >", "D) < title >"],
+            "answer": "A) < head >"
+        },
+        {
+            "question": "4. What is the purpose of the < noscript > tag in HTML?",
+            "options": ["A) To define alternative content for users with JavaScript disabled", "B) To define a script section", "C) To hide content", "D) To make the script non-executable"],
+            "answer": "A) To define alternative content for users with JavaScript disabled"
+        },
+        {
+            "question": "5. Which attribute is used to define a unique identifier for an HTML element?",
+            "options": ["A) id", "B) class", "C) name", "D) identifier"],
+            "answer": "A) id"
+        },
+        {
+            "question": "6. Which CSS property is used to change the background color of an HTML element?",
+            "options": ["A) background-color", "B) background", "C) color", "D) bg-color"],
+            "answer": "A) background-color"
+        },
+        {
+            "question": "7. What is the correct syntax to link an external CSS file to an HTML document?",
+            "options": ["A) < link rel='stylesheet' href='styles.css' >", "B) < css src='styles.css' >", "C) < link href='styles.css' rel='stylesheet' >", "D) < style src='styles.css' >"],
+            "answer": "A) < link rel='stylesheet' href='styles.css' >"
+        },
+        {
+            "question": "8. Which HTML tag is used to define a form control that allows the user to select multiple options?",
+            "options": ["A) < select multiple >", "B) < form >", "C) < input type='checkbox' >", "D) < input type='radio' >"],
+            "answer": "A) < select multiple >"
+        },
+        {
+            "question": "9. Which attribute is used to specify the character encoding for an HTML document?",
+            "options": ["A) charset", "B) encoding", "C) type", "D) lang"],
+            "answer": "A) charset"
+        },
+        {
+            "question": "10. What does the 'alt' attribute do in the < img > tag?",
+            "options": ["A) Specifies alternative text for images", "B) Specifies the image source", "C) Specifies the image dimensions", "D) Provides a caption for the image"],
+            "answer": "A) Specifies alternative text for images"
+        },
+        {
+            "question": "11. How can you make a list item display in a grid layout in HTML and CSS?",
+            "options": ["A) Using < ul > and display: grid", "B) Using < ol > and display: flex", "C) Using < div > and display: inline-block", "D) Using < ul > and list-style: none"],
+            "answer": "A) Using < ul > and display: grid"
+        },
+        {
+            "question": "12. Which HTML tag is used to define a table in an HTML document?",
+            "options": ["A) < table >", "B) < tabledata >", "C) < tab >", "D) < tr >"],
+            "answer": "A) < table >"
+        },
+        {
+            "question": "13. What does the 'z-index' property in CSS do?",
+            "options": ["A) Specifies the stack order of elements", "B) Specifies the width of an element", "C) Specifies the font size", "D) Specifies the background color"],
+            "answer": "A) Specifies the stack order of elements"
+        },
+        {
+            "question": "14. Which HTML tag is used to specify a section of content that can be dynamically updated?",
+            "options": ["A) < section >", "B) < div >", "C) < article >", "D) < aside >"],
+            "answer": "A) < section >"
+        },
+        {
+            "question": "15. Which CSS property is used to add space between the content and the border of an element?",
+            "options": ["A) padding", "B) margin", "C) border-spacing", "D) spacing"],
+            "answer": "A) padding"
+        },
+        {
+            "question": "16. Which HTML tag is used to define a link that opens in a new tab?",
+            "options": ["A) < a target='_blank' >", "B) < a new-tab='true' >", "C) < link target='_new' >", "D) < a href='url' target='new' >"],
+            "answer": "A) < a target='_blank' >"
+        },
+        {
+            "question": "17. What is the difference between the 'display: block' and 'display: inline' CSS properties?",
+            "options": ["A) 'block' elements take up full width, 'inline' elements take up only required space", "B) 'inline' elements take up full width, 'block' elements take up required space", "C) 'block' is for text and 'inline' is for images", "D) No difference"],
+            "answer": "A) 'block' elements take up full width, 'inline' elements take up only required space"
+        },
+        {
+            "question": "18. How do you create a comment in CSS?",
+            "options": ["A) /* comment */", "B) // comment", "C) < !-- comment -- >", "D) { comment }"],
+            "answer": "A) /* comment */"
+        },
+        {
+            "question": "19. What is the purpose of the < iframe > tag in HTML?",
+            "options": ["A) To embed an external webpage within the current page", "B) To add an image", "C) To create a link", "D) To define a table"],
+            "answer": "A) To embed an external webpage within the current page"
+        },
+        {
+            "question": "20. Which of the following is used to define a group of related form controls in HTML?",
+            "options": ["A) < fieldset >", "B) < formgroup >", "C) < inputgroup >", "D) < section >"],
+            "answer": "A) < fieldset >"
+        },
+        {
+            "question": "21. What does the < canvas > tag allow you to do in HTML5?",
+            "options": ["A) Draw graphics on the webpage", "B) Create a table", "C) Add a video", "D) Add a background image"],
+            "answer": "A) Draw graphics on the webpage"
+        },
+        {
+            "question": "22. Which HTML tag is used to define an audio element in HTML5?",
+            "options": ["A) < audio >", "B) < sound >", "C) < music >", "D) < media >"],
+            "answer": "A) < audio >"
+        },
+        {
+            "question": "23. Which tag is used to define a video in HTML5?",
+            "options": ["A) < video >", "B) < movie >", "C) < media >", "D) < video-player >"],
+            "answer": "A) < video >"
+        },
+        {
+            "question": "24. Which HTML element is used to define a multi-line text input control?",
+            "options": ["A) < textarea >", "B) < input >", "C) < textinput >", "D) < textarea-area >"],
+            "answer": "A) < textarea >"
+        },
+        {
+            "question": "25. How do you specify a specific version of HTML in your document?",
+            "options": ["A) < html lang='en' >", "B) < !DOCTYPE html >", "C) < meta version='html5' >", "D) < meta charset='UTF-8' >"],
+            "answer": "B) < !DOCTYPE html >"
+        },
+        {
+            "question": "26. Which HTML element is used to define a section that represents a part of the page, typically for content?",
+            "options": ["A) < article >", "B) < div >", "C) < section >", "D) < header >"],
+            "answer": "A) < article >"
+        },
+         {
+            "question": "27. What is the purpose of the < noscript > tag in HTML?",
+            "options": ["A) To provide an alternative content for browsers that do not support JavaScript", "B) To disable JavaScript on the page", "C) To load external JavaScript files", "D) To format HTML elements without JavaScript"],
+            "answer": "A) To provide an alternative content for browsers that do not support JavaScript"
+        },
+        {
+            "question": "28. Which HTML tag is used to define a video player?",
+            "options": ["A) < video >", "B) < media >", "C) < player >", "D) < video-player >"],
+            "answer": "A) < video >"
+        },
+        {
+            "question": "29. Which element is used to create a progress bar in HTML5?",
+            "options": ["A) < progress >", "B) < meter >", "C) < status >", "D) < bar >"],
+            "answer": "A) < progress >"
+        },
+        {
+            "question": "30. Which HTML tag is used to define an audio file?",
+            "options": ["A) < audio >", "B) < sound >", "C) < mp3 >", "D) < music >"],
+            "answer": "A) < audio >"
+        }
+        ]
+        }
+    };
+
+    return allQuestions[language][difficulty].slice(0, numQuestions); // Ensure number of questions
+
+    }
+    </script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

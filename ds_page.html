@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<div class="container mt-5">
+    <h1 class="text-center">Data Stucture Quiz</h1>
+
+    <!-- Difficulty Level Selection -->
+    <div class="form-group">
+        <label for="difficulty">Select Difficulty</label>
+        <select class="form-control" id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+        </select>
+    </div>
+
+    <!-- Question Count Selection -->
+    <div class="form-group">
+        <label for="questions">Select Number of Questions</label>
+        <select class="form-control" id="questions">
+            <option value="10">10 Questions</option>
+            <option value="20">20 Questions</option>
+            <option value="30">30 Questions</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary btn-block" id="startQuiz" onclick="startQuiz()">Start Quiz</button>
+</div>
+
+<script>
+    function startQuiz() {
+        const difficulty = document.getElementById('difficulty').value;
+        const numQuestions = document.getElementById('questions').value;
+
+        // Redirect to the quiz page with query parameters
+        window.location.href = `ds_quiz.html?difficulty=${difficulty}&questions=${numQuestions}`;
+    }
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

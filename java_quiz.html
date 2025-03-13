@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center" id="quiz-title"></h1>
+    
+        <!-- Quiz Questions -->
+        <div id="quiz-container"></div>
+    
+        <!-- Navigation Buttons -->
+        <div id="navigation-buttons" class="text-center mt-3"></div>
+    
+        <!-- Score Section -->
+        <div id="score-section" class="text-center mt-5" style="display: none;">
+            <h3>Your Score:</h3>
+            <p id="score-text"></p>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let currentQuestionIndex = 0;
+        let questions = [];
+        let userAnswers = [];  // Array to store user answers
+        let timer;
+        let timeLeft;
+        let timerRunning = false;
+    
+        // Retrieve URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const difficulty = urlParams.get('difficulty');
+        const numQuestions = parseInt(urlParams.get('questions'));
+    
+        // Set quiz title
+        document.getElementById('quiz-title').textContent = `Java - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} - ${numQuestions} Questions`;
+    
+        // Set time per question based on difficulty
+        function getTimeForQuestion(difficulty) {
+            switch (difficulty) {
+                case 'easy':
+                    return 30;  // 30 seconds for easy mode
+                case 'medium':
+                    return 45;  // 45 seconds for medium mode
+                case 'hard':
+                    return 60;  // 60 seconds for hard mode
+                default:
+                    return 30;  // Default to easy if difficulty is not set
+            }
+        }
+    
+        // Generate quiz questions based on parameters
+        questions = getQuestions('java', difficulty, numQuestions);
+        displayQuestion(currentQuestionIndex);
+    
+        function displayQuestion(index) {
+            const questionContainer = document.getElementById('quiz-container');
+            const question = questions[index];
+    
+            // Set timer for the current question
+            timeLeft = getTimeForQuestion(difficulty);
+    
+            // Clear any previous timer and start a new one
+            clearInterval(timer);
+            startTimer();
+    
+            // Create question HTML using innerHTML
+            questionContainer.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body d-flex justify-content-between">
+                        <!-- Question Text -->
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">${question.question}</h5>
+                            ${question.options.map((option, i) => {
+                                const isChecked = userAnswers[index] === option ? 'checked' : ''; // Check if this option was previously selected
+                                return `
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="question${index}" id="option${i+1}_${index}" value="${option}" ${isChecked}>
+                                        <label class="form-check-label" for="option${i+1}_${index}">
+                                            ${option}
+                                        </label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+    
+                        <!-- Timer Display -->
+                        <div id="timer" class="align-self-center">
+                            Time Left: <span id="time">${timeLeft}</span> seconds
+                        </div>
+                    </div>
+                </div>
+            `;
+    
+            // Display Previous and Next buttons
+            const navigationContainer = document.getElementById('navigation-buttons');
+            navigationContainer.innerHTML = '';  // Clear previous buttons
+    
+            // Add Previous button if not the first question
+            if (index > 0) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(-1)">Previous</button>
+                `;
+            }
+    
+            // Add Next button if not the last question
+            if (index < questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-primary" onclick="navigateQuestion(1)">Next</button>
+                `;
+            }
+    
+            // Optionally, add a submit button if on the last question
+            if (index === questions.length - 1) {
+                navigationContainer.innerHTML += `
+                    <button class="btn btn-success" onclick="submitQuiz()">Submit Quiz</button>
+                `;
+            }
+        }
+    
+        function navigateQuestion(direction) {
+            // Save the selected answer for the current question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer
+            }
+    
+            // Clear the timer for the previous question
+            clearInterval(timer);
+    
+            // Move to the next question
+            currentQuestionIndex += direction;
+    
+            // Display the new question
+            displayQuestion(currentQuestionIndex);
+        }
+    
+        function startTimer() {
+            // Start the countdown
+            timer = setInterval(() => {
+                timeLeft--;  // Decrease time
+                document.getElementById('time').textContent = timeLeft;  // Update timer display
+    
+                if (timeLeft <= 0) {
+                    clearInterval(timer);  // Stop timer when time runs out
+                    navigateQuestion(1);  // Automatically move to the next question
+                }
+            }, 1000);
+        }
+    
+        function submitQuiz() {
+            let score = 0;  // Reset score before starting the evaluation
+    
+            // Ensure that the answer is saved for the last question
+            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
+            if (selectedOption) {
+                userAnswers[currentQuestionIndex] = selectedOption.value;  // Store the selected answer for the last question if needed
+            }
+    
+            // Evaluate each question
+            for (let i = 0; i < questions.length; i++) {
+                const correctAnswer = questions[i].answer;  // Get the correct answer text
+                
+                // Ensure we have an answer stored for this question
+                if (userAnswers[i] === correctAnswer) {
+                    score++;  // Increment score if the answer is correct
+                }
+            }
+    
+            // Display the score
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('navigation-buttons').style.display = 'none';
+            document.getElementById('score-section').style.display = 'block';
+            document.getElementById('score-text').textContent = `You scored ${score} out of ${questions.length}`;
+        }
+
+    function getQuestions(language, difficulty, numQuestions) {
+        const allQuestions = {
+        java: {
+            easy: [
+                    {
+                        question: "1. Which of the following is a valid Java data type?",
+                        options: ["A) int", "B) float", "C) boolean", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "2. What is the default value of a boolean variable in Java?",
+                        options: ["A) true", "B) false", "C) null", "D) undefined"],
+                        answer: "B) false"
+                    },
+                    {
+                        question: "3. Which of the following is the correct syntax to declare a variable in Java?",
+                        options: ["A) int x;", "B) int x = 10;", "C) float y = 2.5;", "D) All of the above"],
+                        answer: "D) All of the above"
+                    },
+                    {
+                        question: "4. Which method is used to print text to the console in Java?",
+                        options: ["A) print()", "B) println()", "C) echo()", "D) display()"],
+                        answer: "B) println()"
+                    },
+                    {
+                        question: "5. What is the size of an int data type in Java?",
+                        options: ["A) 16 bits", "B) 32 bits", "C) 64 bits", "D) 8 bits"],
+                        answer: "B) 32 bits"
+                    },
+                    {
+                        question: "6. Which keyword is used to define a constant in Java?",
+                        options: ["A) static", "B) final", "C) constant", "D) immutable"],
+                        answer: "B) final"
+                    },
+                    {
+                        question: "7. Which of the following is not a Java access modifier?",
+                        options: ["A) public", "B) private", "C) protected", "D) hidden"],
+                        answer: "D) hidden"
+                    },
+                    {
+                        question: "8. Which loop structure will always execute at least once?",
+                        options: ["A) for loop", "B) while loop", "C) do-while loop", "D) infinite loop"],
+                        answer: "C) do-while loop"
+                    },
+                    {
+                        question: "9. What is the default value of an integer variable in Java?",
+                        options: ["A) 0", "B) null", "C) undefined", "D) false"],
+                        answer: "A) 0"
+                    },
+                    {
+                        question: "10. Which of the following is the correct way to initialize a string in Java?",
+                        options: ["A) String str = \"Hello\";", "B) String str = new String();", "C) String str = 'Hello';", "D) String str = Hello;"],
+                        answer: "A) String str = \"Hello\";"
+                    },
+                    {
+                        question: "11. Which of the following is the correct syntax to create an object in Java?",
+                        options: ["A) ClassName obj = new ClassName();", "B) new ClassName obj;", "C) ClassName obj = ClassName();", "D) ClassName obj = ClassName;"],
+                        answer: "A) ClassName obj = new ClassName();"
+                    },
+                    {
+                        question: "12. Which of the following is true about Java?",
+                        options: ["A) Java is platform-dependent.", "B) Java is platform-independent.", "C) Java is not object-oriented.", "D) None of the above."],
+                        answer: "B) Java is platform-independent."
+                    },
+                    {
+                        question: "13. How do you declare an array in Java?",
+                        options: ["A) int[] arr;", "B) int arr[];", "C) Both A and B", "D) int arr();"],
+                        answer: "C) Both A and B"
+                    },
+                    {
+                        question: "14. Which of the following is the correct method signature for a main method in Java?",
+                        options: ["A) public static void main(String[] args)", "B) static void main(String args[])", "C) void main(String args[])", "D) public void main(String args[])"],
+                        answer: "A) public static void main(String[] args)"
+                    },
+                    {
+                        question: "15. Which operator is used to compare two values in Java?",
+                        options: ["A) =", "B) ==", "C) !=", "D) >"],
+                        answer: "B) =="
+                    },
+                    {
+                        question: "16. Which of the following statements is true about Java?",
+                        options: ["A) Java is not a multi-threaded language.", "B) Java supports multi-threading.", "C) Java is a scripting language.", "D) None of the above."],
+                        answer: "B) Java supports multi-threading."
+                    },
+                    {
+                        question: "17. What will be the output of the following Java code: System.out.println(1 + 2 + \"Hello\");",
+                        options: ["A) 3Hello", "B) Hello3", "C) 1 2 Hello", "D) Compilation Error"],
+                        answer: "A) 3Hello"
+                    },
+                    {
+                        question: "18. What is the keyword used to define a class in Java?",
+                        options: ["A) class", "B) def", "C) object", "D) static"],
+                        answer: "A) class"
+                    },
+                    {
+                        question: "19. How do you create a constant in Java?",
+                        options: ["A) By using the final keyword", "B) By using the static keyword", "C) By using the const keyword", "D) Both A and B"],
+                        answer: "A) By using the final keyword"
+                    },
+                    {
+                        question: "20. Which of the following is the default value of an instance variable of type double in Java?",
+                        options: ["A) 0.0", "B) 0", "C) null", "D) NaN"],
+                        answer: "A) 0.0"
+                    },
+                    {
+                        question: "21. What does the 'new' keyword do in Java?",
+                        options: ["A) It creates a new instance of a class", "B) It initializes a new array", "C) It both creates and initializes an object", "D) None of the above"],
+                        answer: "C) It both creates and initializes an object"
+                    },
+                    {
+                        question: "22. Which of the following is a valid Java identifier?",
+                        options: ["A) 123abc", "B) $myVar", "C) @javaVar", "D) 1java"],
+                        answer: "B) $myVar"
+                    },
+                    {
+                        question: "23. Which of the following is not a primitive data type in Java?",
+                        options: ["A) int", "B) double", "C) String", "D) boolean"],
+                        answer: "C) String"
+                    },
+                    {
+                        question: "24. What does the 'this' keyword refer to in Java?",
+                        options: ["A) The current method", "B) The current class instance", "C) The current constructor", "D) The parent class instance"],
+                        answer: "B) The current class instance"
+                    },
+                    {
+                        question: "25. What is the default value of an object reference in Java?",
+                        options: ["A) null", "B) undefined", "C) 0", "D) false"],
+                        answer: "A) null"
+                    },
+                    {
+                        question: "26. Which of the following is not a valid loop in Java?",
+                        options: ["A) for", "B) while", "C) do-while", "D) until"],
+                        answer: "D) until"
+                    },
+                    {
+                        question: "27. How do you handle exceptions in Java?",
+                        options: ["A) try-catch block", "B) if-else block", "C) switch statement", "D) with the throw statement"],
+                        answer: "A) try-catch block"
+                    },
+                    {
+                        question: "28. Which of the following is used to exit from a loop in Java?",
+                        options: ["A) break", "B) exit", "C) continue", "D) return"],
+                        answer: "A) break"
+                    },
+                    {
+                        question: "29. Which of the following is used to inherit a class in Java?",
+                        options: ["A) implements", "B) extends", "C) super", "D) inherit"],
+                        answer: "B) extends"
+                    },
+                    {
+                        question: "30. Which of the following is the correct way to declare a multi-dimensional array in Java?",
+                        options: ["A) int[][] arr;", "B) int arr[][];", "C) Both A and B", "D) int arr[];"],
+                        answer: "C) Both A and B"
+                    }
+            ],
+            medium: [
+            {
+                question: "1. Which method is used to start a thread in Java?",
+                options: ["A) run()", "B) start()", "C) init()", "D) begin()"],
+                answer: "B) start()"
+            },
+            {
+                question: "2. Which of the following is a valid way to declare an array in Java?",
+                options: ["A) int arr[];", "B) int[] arr;", "C) int arr();", "D) Both A and B"],
+                answer: "D) Both A and B"
+            },
+            {
+                question: "3. What is the purpose of the super keyword in Java?",
+                options: ["A) Calls a parent class constructor", "B) Calls a child class constructor", "C) Creates an instance of a class", "D) Defines a superclass"],
+                answer: "A) Calls a parent class constructor"
+            },
+            {
+                question: "4. Which of the following classes is used to handle exceptions in Java?",
+                options: ["A) Exception", "B) Throwable", "C) Error", "D) RuntimeException"],
+                answer: "B) Throwable"
+            },
+            {
+                question: "5. Which of the following methods is used to find the length of an array in Java?",
+                options: ["A) length()", "B) getSize()", "C) length", "D) getLength()"],
+                answer: "C) length"
+            },
+            {
+                question: "6. What does the 'finally' block do in exception handling?",
+                options: ["A) Executes when an exception is thrown", "B) Executes only when no exception is thrown", "C) Always executes regardless of an exception", "D) Can be skipped"],
+                answer: "C) Always executes regardless of an exception"
+            },
+            {
+                question: "7. What is the output of the following code? System.out.println(5 + 5 + \"Java\");",
+                options: ["A) 10Java", "B) Java10", "C) 5Java5", "D) 10 Java"],
+                answer: "A) 10Java"
+            },
+            {
+                question: "8. Which of the following is used to create an anonymous inner class in Java?",
+                options: ["A) class", "B) interface", "C) new keyword", "D) super keyword"],
+                answer: "C) new keyword"
+            },
+            {
+                question: "9. What is the purpose of the 'static' keyword in Java?",
+                options: ["A) Used for defining a constant", "B) Used for defining an instance variable", "C) Used for defining a class method", "D) Used for defining a thread"],
+                answer: "C) Used for defining a class method"
+            },
+            {
+                question: "10. Which of the following is the correct way to handle multiple exceptions in Java?",
+                options: ["A) Multiple catch blocks", "B) Multiple throws statements", "C) Multiple try blocks", "D) Both A and B"],
+                answer: "A) Multiple catch blocks"
+            },
+            {
+                question: "11. Which of the following is not an abstract class in Java?",
+                options: ["A) java.io.FileReader", "B) java.util.AbstractList", "C) java.awt.Component", "D) java.util.AbstractQueue"],
+                answer: "A) java.io.FileReader"
+            },
+            {
+                question: "12. What is the output of the following code? System.out.println(\"5\" + 2 + 3);",
+                options: ["A) 53", "B) 10", "C) 5 23", "D) 23 5"],
+                answer: "A) 53"
+            },
+            {
+                question: "13. Which of the following is used to implement an interface in Java?",
+                options: ["A) implements", "B) extends", "C) super", "D) inherit"],
+                answer: "A) implements"
+            },
+            {
+                question: "14. Which of the following is the correct way to define a constructor in Java?",
+                options: ["A) public ClassName()", "B) public void ClassName()", "C) constructor ClassName()", "D) ClassName()"],
+                answer: "A) public ClassName()"
+            },
+            {
+                question: "15. Which method can be used to stop a thread in Java?",
+                options: ["A) stop()", "B) interrupt()", "C) suspend()", "D) kill()"],
+                answer: "B) interrupt()"
+            },
+            {
+                question: "16. What is the correct way to declare a generic class in Java?",
+                options: ["A) class MyClass<T>", "B) class MyClass[]", "C) class MyClass<T>()", "D) class MyClass<T extends Number>"],
+                answer: "A) class MyClass<T>"
+            },
+            {
+                question: "17. Which of the following is used to prevent a method from being overridden in Java?",
+                options: ["A) static", "B) final", "C) private", "D) abstract"],
+                answer: "B) final"
+            },
+            {
+                question: "18. What will be the output of the following code? int[] arr = {1, 2, 3}; System.out.println(arr[1]);",
+                options: ["A) 1", "B) 2", "C) 3", "D) Error"],
+                answer: "B) 2"
+            },
+            {
+                question: "19. Which of the following classes are used to handle input and output in Java?",
+                options: ["A) FileReader", "B) FileWriter", "C) BufferedReader", "D) All of the above"],
+                answer: "D) All of the above"
+            },
+            {
+                question: "20. What is the default value of a char variable in Java?",
+                options: ["A) 'a'", "B) '\u0000'", "C) '0'", "D) null"],
+                answer: "B) '\u0000'"
+            },
+            {
+                question: "21. What is the output of the following Java code? System.out.println(\"Java\".charAt(2));",
+                options: ["A) J", "B) a", "C) v", "D) Error"],
+                answer: "C) v"
+            },
+            {
+                question: "22. Which of the following collections is not part of the Java Collections Framework?",
+                options: ["A) List", "B) Set", "C) Map", "D) Queue", "E) Array"],
+                answer: "E) Array"
+            },
+            {
+                question: "23. Which of the following is used to create an instance of an enum in Java?",
+                options: ["A) new", "B) valueOf()", "C) enum", "D) instance()"],
+                answer: "B) valueOf()"
+            },
+            {
+                question: "24. Which of the following is the correct method to convert a string to an integer in Java?",
+                options: ["A) Integer.parseInt()", "B) Integer.toInt()", "C) String.parseInt()", "D) Integer.parse()"],
+                answer: "A) Integer.parseInt()"
+            },
+            {
+                question: "25. Which method in Java is used to convert a string to lower case?",
+                options: ["A) toLowerCase()", "B) toLower()", "C) lower()", "D) convertLowerCase()"],
+                answer: "A) toLowerCase()"
+            },
+            {
+                question: "26. What is the purpose of the 'volatile' keyword in Java?",
+                options: ["A) Used for thread-safe variables", "B) Used to prevent optimization of variables", "C) Used to declare a global variable", "D) Both A and B"],
+                answer: "D) Both A and B"
+            },
+            {
+                question: "27. What is the size of a char in Java?",
+                options: ["A) 8 bits", "B) 16 bits", "C) 32 bits", "D) 64 bits"],
+                answer: "B) 16 bits"
+            },
+            {
+                question: "28. Which of the following methods is used to make a thread run in Java?",
+                options: ["A) run()", "B) start()", "C) begin()", "D) initialize()"],
+                answer: "B) start()"
+            },
+            {
+                question: "29. How do you declare a block of code that should be executed if an exception occurs in Java?",
+                options: ["A) catch", "B) try", "C) throw", "D) finally"],
+                answer: "B) try"
+            },
+            {
+                question: "30. What does the 'new' keyword do in Java?",
+                options: ["A) It creates a new instance of a class", "B) It initializes a variable", "C) It calls a constructor", "D) All of the above"],
+                answer: "D) All of the above"
+            }
+            ],
+            hard: [
+            {
+                question: "1. What is the purpose of the transient keyword?",
+                options: ["A) Marks a variable as not serializable", "B) Indicates a constant", "C) Defines a variable that can be updated", "D) Specifies a class with limited visibility"],
+                answer: "A) Marks a variable as not serializable"
+            },
+            {
+                question: "2. Which of the following is the correct syntax for a constructor in Java?",
+                options: ["A) public ClassName()", "B) public void ClassName()", "C) constructor ClassName()", "D) ClassName()"],
+                answer: "A) public ClassName()"
+            },
+            {
+                question: "3. What is the difference between deep copy and shallow copy in Java?",
+                options: ["A) Deep copy copies objects, shallow copy copies references", "B) Shallow copy copies objects, deep copy copies references", "C) Both perform the same", "D) None of the above"],
+                answer: "A) Deep copy copies objects, shallow copy copies references"
+            },
+            {
+                question: "4. Which of the following methods is used to synchronize a block of code in Java?",
+                options: ["A) synchronized", "B) lock", "C) critical", "D) sync"],
+                answer: "A) synchronized"
+            },
+            {
+                question: "5. What is the role of the 'instanceof' operator in Java?",
+                options: ["A) Checks if an object is an instance of a class", "B) Compares two objects", "C) Casts an object to a specific class", "D) None of the above"],
+                answer: "A) Checks if an object is an instance of a class"
+            },
+            {
+                question: "6. How can you prevent a class from being subclassed in Java?",
+                options: ["A) By making the class final", "B) By making the class private", "C) By using the static keyword", "D) By making the class abstract"],
+                answer: "A) By making the class final"
+            },
+            {
+                question: "7. What is the output of the following code? StringBuilder sb = new StringBuilder(\"Java\"); sb.reverse(); System.out.println(sb);",
+                options: ["A) avaJ", "B) Java", "C) Error", "D) javA"],
+                answer: "A) avaJ"
+            },
+            {
+                question: "8. What is the purpose of the volatile keyword in Java?",
+                options: ["A) It ensures atomic operations", "B) It helps with synchronization", "C) It ensures that a variable's value is not cached", "D) Both B and C"],
+                answer: "D) Both B and C"
+            },
+            {
+                question: "9. Which of the following collections is thread-safe in Java?",
+                options: ["A) ArrayList", "B) HashMap", "C) Vector", "D) LinkedList"],
+                answer: "C) Vector"
+            },
+            {
+                question: "10. What will be the result of the following code? System.out.println(5 / 2);",
+                options: ["A) 2.5", "B) 2", "C) 2.0", "D) Compilation error"],
+                answer: "B) 2"
+            },
+            {
+                question: "11. Which of the following classes cannot be subclassed in Java?",
+                options: ["A) String", "B) Integer", "C) Thread", "D) Object"],
+                answer: "A) String"
+            },
+            {
+                question: "12. Which method is called when an object is cloned in Java?",
+                options: ["A) clone()", "B) cloneObject()", "C) newInstance()", "D) copy()"],
+                answer: "A) clone()"
+            },
+            {
+                question: "13. What is the purpose of the finalize() method in Java?",
+                options: ["A) Used to release system resources", "B) Used to finalize a method", "C) Used to execute a thread", "D) Used to define the object structure"],
+                answer: "A) Used to release system resources"
+            },
+            {
+                question: "14. Which of the following methods can be used to wait for a thread to finish execution?",
+                options: ["A) wait()", "B) join()", "C) sleep()", "D) close()"],
+                answer: "B) join()"
+            },
+            {
+                question: "15. What is the default initial capacity of an ArrayList in Java?",
+                options: ["A) 10", "B) 20", "C) 15", "D) 5"],
+                answer: "A) 10"
+            },
+            {
+                question: "16. Which of the following methods is used to serialize an object in Java?",
+                options: ["A) writeObject()", "B) readObject()", "C) serialize()", "D) saveObject()"],
+                answer: "A) writeObject()"
+            },
+            {
+                question: "17. What is the output of the following code? System.out.println(0 / 0);",
+                options: ["A) 0", "B) Error", "C) NaN", "D) Infinity"],
+                answer: "C) NaN"
+            },
+            {
+                question: "18. Which of the following statements is true about method overloading in Java?",
+                options: ["A) Method overloading is achieved by changing the method name.", "B) Method overloading is achieved by changing the return type of the method.", "C) Method overloading is achieved by changing the number of arguments or the type of arguments.", "D) None of the above"],
+                answer: "C) Method overloading is achieved by changing the number of arguments or the type of arguments."
+            },
+            {
+                question: "19. What is the output of the following code? int a = 10; if(a > 5) {System.out.println(\"Greater\");}",
+                options: ["A) Greater", "B) 10", "C) Error", "D) Nothing"],
+                answer: "A) Greater"
+            },
+            {
+                question: "20. What does the 'instanceof' operator check in Java?",
+                options: ["A) It checks if an object is of a particular class", "B) It checks if a variable is an object", "C) It checks if a class is abstract", "D) It checks if a method is static"],
+                answer: "A) It checks if an object is of a particular class"
+            },
+            {
+                question: "21. What does the 'super' keyword do in Java?",
+                options: ["A) It refers to the superclass constructor", "B) It refers to the superclass method", "C) It refers to the superclass variables", "D) All of the above"],
+                answer: "D) All of the above"
+            },
+            {
+                question: "22. Which of the following is used to generate a random number in Java?",
+                options: ["A) Math.random()", "B) random()", "C) Math.randomize()", "D) Random.generate()"],
+                answer: "A) Math.random()"
+            },
+            {
+                question: "23. What is the output of the following code? String s = \"Java\"; System.out.println(s.substring(1, 3));",
+                options: ["A) Ja", "B) av", "C) va", "D) Error"],
+                answer: "C) va"
+            },
+            {
+                question: "24. What is the difference between ArrayList and LinkedList in Java?",
+                options: ["A) ArrayList is faster for random access, LinkedList is slower", "B) ArrayList uses a dynamic array, LinkedList uses nodes", "C) LinkedList is faster than ArrayList for adding elements", "D) All of the above"],
+                answer: "D) All of the above"
+            },
+            {
+                question: "25. How can we make a class immutable in Java?",
+                options: ["A) By using the final keyword", "B) By preventing method overriding", "C) By making instance variables final and private", "D) Both A and C"],
+                answer: "D) Both A and C"
+            },
+            {
+                question: "26. Which of the following statements is true about Java inheritance?",
+                options: ["A) A class can inherit from multiple classes", "B) A class can inherit from a single class", "C) A class cannot inherit from another class", "D) None of the above"],
+                answer: "B) A class can inherit from a single class"
+            },
+            {
+                question: "27. What does the 'continue' statement do in Java?",
+                options: ["A) It skips the current iteration of the loop", "B) It exits the loop", "C) It stops the program", "D) It restarts the loop"],
+                answer: "A) It skips the current iteration of the loop"
+            },
+            {
+                question: "28. Which of the following is used to prevent method overriding in Java?",
+                options: ["A) private", "B) protected", "C) final", "D) static"],
+                answer: "C) final"
+            },
+            {
+                question: "29. Which of the following is the correct syntax to declare a method in Java?",
+                options: ["A) returnType methodName()", "B) void methodName()", "C) returnType methodName[]", "D) methodName returnType()"],
+                answer: "A) returnType methodName()"
+            },
+            {
+                question: "30. How do you declare an abstract class in Java?",
+                options: ["A) abstract class MyClass", "B) abstract MyClass", "C) class MyClass abstract", "D) class abstract MyClass"],
+                answer: "A) abstract class MyClass"
+            }
+            ]
+        },
+    };
+
+    return allQuestions[language][difficulty].slice(0, numQuestions); // Ensure number of questions
+
+    }
+    </script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+</html>

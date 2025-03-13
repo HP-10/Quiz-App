@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="quiz.jpg" type="image/jpeg">
+    <title>Quiz</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .form-container {
+            max-width: 400px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-title {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="form-container">
+            <h2 class="form-title text-center">Sign Up</h2>
+            <form onsubmit="return validate()">
+                <div class="form-group">
+                    <label for="signupEmail">Email address</label>
+                    <input type="email" class="form-control" id="email" placeholder="Enter email">
+                    <span id="emailerr" style="color: red; padding:5px;"></span>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" class="form-control" id="password" placeholder="Password">
+                    <span id="passworderr" style="color: red; padding:5px;"></span>
+                </div>
+                <div class="form-group">
+                    <label for="signupConfirmPassword">Confirm Password</label>
+                    <input type="password" class="form-control" id="cpassword" placeholder="Confirm Password">
+                    <span id="cpassworderr" style="color: red; padding:5px;"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+                <div>
+                    <p style="margin: 10px; padding-left: 35px;">
+                    Already have an account?
+                    <a href="login.html">Login here</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+        <script>
+            function validate(){
+                let email=document.getElementById("email").value.trim().toLowerCase();
+                let password=document.getElementById("password").value;
+                let cpassword=document.getElementById("cpassword").value;
+                const emailerr=document.getElementById("emailerr");
+                const passworderr=document.getElementById("passworderr");
+                const cpassworderr=document.getElementById("cpassworderr");
+
+                const emailpattern=/^[a-zA-Z0-9._%+-]+@[a-zA-Z.-]+\.[a-zA-Z]{2,}$/;
+                if(!emailpattern.test(email)){
+                    emailerr.textContent= "Enter email properly!";
+                    document.getElementById("email").focus();
+                    return false;
+                }
+                if(password.length<8){
+                    emailerr.textContent= "";
+                    passworderr.textContent= "Enter password properly!";
+                    document.getElementById("password").focus();
+                    return false;
+                }
+                if(cpassword!=password){
+                    emailerr.textContent= "";
+                    passworderr.textContent= "";
+                    cpassworderr.textContent= "Confirm password must be same as password!";
+                    document.getElementById("password").focus();
+                    return false;
+                }
+
+                // Save the details to localStorage
+                localStorage.setItem('email', email);
+                localStorage.setItem('password', password);
+                alert('Signup successfull!');
+                window.location.href = "terms_condition.html"; // Redirect to login page after successful signup
+                return false; // Prevent form submission
+            }
+        </script>
+    </body>
+</html>
